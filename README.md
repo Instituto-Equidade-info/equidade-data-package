@@ -1,11 +1,13 @@
 # Equidade Data Package
 
-Data processing utilities for Equidade.info projects - AWS S3, GCP Storage, and BigQuery loaders.
+Data processing utilities for Equidade.info projects - AWS S3, GCP Storage, Google Drive, and BigQuery loaders.
 
 ## Features
 
 - **AWS S3 Parquet Loader**: Robust parquet file loading from S3 with automatic schema handling
 - **GCP Storage**: Read/write various file formats (Parquet, CSV, Excel, JSON) from Google Cloud Storage
+- **Google Drive**: Download and read files, Google Sheets, and Excel files from Google Drive
+- **BigQuery Query with Cache**: Execute BigQuery queries with automatic result caching for faster repeated queries
 - **BigQuery Loader**: Load DataFrames into BigQuery with automatic type inference and schema handling
 
 ## Installation
@@ -94,7 +96,73 @@ data_loader.save_data(
 storage_service.close()
 ```
 
-### BigQuery Loader
+### Google Drive
+
+Read files, Google Sheets, and Excel files directly from Google Drive:
+
+```python
+from equidade_data_package.gcp.drive import DriveService, DataFromDrive
+
+# Initialize Drive service
+credentials = {...}  # Your GCP credentials dict
+drive_service = DriveService(credentials)
+data_loader = DataFromDrive(drive_service)
+
+# Read a CSV file from Drive
+df = data_loader.read_csv(
+    file_id="your-file-id-here"
+)
+
+# Read a Google Sheet as CSV
+df = data_loader.read_csv(
+    file_id="your-sheet-id-here",
+    is_sheet=True  # Uses comma separator for Google Sheets
+)
+
+# Read multiple tabs from an Excel file
+df = data_loader.read_excel_tabs(
+    file_id="your-file-id-here",
+    sheet_names=["Sheet1", "Sheet2", "Internet"],
+    column_names=["col1", "col2", "col3"],
+    skiprows=4  # Skip header rows
+)
+
+# Download any file to a buffer
+file_buffer = data_loader.download_file(
+    file_id="your-file-id-here",
+    force_csv=True  # Export Google Sheets as CSV
+)
+```
+
+### BigQuery
+
+#### Query with Caching
+
+Execute BigQuery queries with automatic result caching:
+
+```python
+from equidade_data_package.gcp.bigquery import query_bigquery
+
+# Execute a query with credentials
+credentials = {...}  # Your GCP credentials dict
+df = query_bigquery(
+    sql_query="SELECT * FROM `project.dataset.table` WHERE date > '2024-01-01'",
+    credentials_json=credentials
+)
+
+# Or use environment variable for credentials
+# Set GCP_CREDENTIALS env var with your credentials JSON
+df = query_bigquery(
+    sql_query="SELECT COUNT(*) as total FROM `project.dataset.table`"
+)
+
+# Subsequent calls with the same query return cached results instantly
+df_cached = query_bigquery(
+    sql_query="SELECT COUNT(*) as total FROM `project.dataset.table`"
+)  # Returns immediately from cache
+```
+
+#### Load DataFrames to BigQuery
 
 Load DataFrames into BigQuery with automatic type inference:
 
@@ -147,7 +215,8 @@ equidade-data-package/
 │   ├── gcp/
 │   │   ├── __init__.py
 │   │   ├── storage.py
-│   │   └── bigquery.py
+│   │   ├── bigquery.py
+│   │   └── drive.py
 │   └── utils/
 │       └── __init__.py
 ├── pyproject.toml

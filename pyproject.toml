@@ -1,7 +1,7 @@
 [project]
 name = "equidade-data-package"
 version = "0.1.0"
-description = "Data processing utilities for Equidade.info projects - AWS S3, GCP Storage, and BigQuery loaders"
+description = "Data processing utilities for Equidade.info projects - AWS S3, GCP Storage, Google Drive, and BigQuery loaders"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [

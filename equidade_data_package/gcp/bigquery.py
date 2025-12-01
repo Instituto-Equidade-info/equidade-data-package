@@ -4,10 +4,92 @@ import pandas as pd
 import os
 import logging
 import numpy as np
+import hashlib
+import time
+import json
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from google.oauth2 import service_account
 from google.cloud import bigquery
+
+
+# Global cache for query results
+_query_cache = {}
+
+
+def query_bigquery(
+    sql_query: str, credentials_json: Optional[Dict] = None
+) -> pd.DataFrame:
+    """
+    Execute a BigQuery query with manual caching implementation.
+
+    This function caches query results to avoid redundant API calls for identical queries.
+    The cache key is an MD5 hash of the SQL query string.
+
+    Args:
+        sql_query: The SQL query to execute
+        credentials_json: GCP credentials as dictionary. If None, loads from GCP_CREDENTIALS
+                         environment variable
+
+    Returns:
+        pd.DataFrame: Query results as a DataFrame
+
+    Raises:
+        Exception: If query execution fails or credentials are missing
+
+    Example:
+        >>> credentials = {...}  # Your GCP credentials dict
+        >>> df = query_bigquery("SELECT * FROM dataset.table", credentials)
+        >>> # Second call with same query returns cached result
+        >>> df2 = query_bigquery("SELECT * FROM dataset.table", credentials)
+    """
+    # Create hash of query for cache key
+    query_hash = hashlib.md5(sql_query.encode("utf-8")).hexdigest()
+
+    # Check if we have this query in cache
+    if query_hash in _query_cache:
+        logging.info(f"Cache hit for query: {query_hash[:8]}...")
+        return _query_cache[query_hash].copy()  # Return copy to avoid modifications
+
+    # If not in cache, execute the query
+    start_time = time.time()
+
+    try:
+        # If credentials_json is None, load from environment
+        if credentials_json is None:
+            credentials_json = json.loads(os.getenv("GCP_CREDENTIALS"))
+
+        # Create credentials
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_json, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+
+        # Create client
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
+
+        # Configure job (without timeout_ms)
+        job_config = bigquery.QueryJobConfig(
+            use_query_cache=True  # Use BigQuery internal cache
+        )
+
+        # Execute the query
+        query_job = client.query(sql_query, job_config=job_config)
+
+        # Get the DataFrame
+        df = query_job.to_dataframe()
+
+        logging.info(f"BigQuery query took {time.time() - start_time:.2f} seconds")
+
+        # Add to cache
+        _query_cache[query_hash] = df.copy()
+
+        return df
+
+    except Exception as e:
+        logging.error(f"BigQuery query error: {str(e)}")
+        raise  # Re-raise the exception to maintain original behavior
 
 
 @dataclass
