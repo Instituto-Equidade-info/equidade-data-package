@@ -1,0 +1,45 @@
+[project]
+name = "equidade-data-package"
+version = "0.1.0"
+description = "Data processing utilities for Equidade.info projects - AWS S3, GCP Storage, and BigQuery loaders"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Equidade Team" }
+]
+license = { text = "MIT" }
+
+dependencies = [
+    "pandas>=2.0.0",
+    "pyarrow>=19.0.0",
+    "numpy>=2.0.0",
+    "google-cloud-storage>=3.0.0",
+    "google-cloud-bigquery>=3.0.0",
+    "google-api-python-client>=2.0.0",
+    "google-auth>=2.0.0",
+    "boto3>=1.0.0",
+    "botocore>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["equidade_data_package"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]

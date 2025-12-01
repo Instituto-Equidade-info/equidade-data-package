@@ -1,0 +1,226 @@
+# Equidade Data Package
+
+Data processing utilities for Equidade.info projects - AWS S3, GCP Storage, and BigQuery loaders.
+
+## Features
+
+- **AWS S3 Parquet Loader**: Robust parquet file loading from S3 with automatic schema handling
+- **GCP Storage**: Read/write various file formats (Parquet, CSV, Excel, JSON) from Google Cloud Storage
+- **BigQuery Loader**: Load DataFrames into BigQuery with automatic type inference and schema handling
+
+## Installation
+
+### From Private Git Repository
+
+```bash
+# Using pip
+pip install git+https://github.com/your-org/equidade-data-package.git
+
+# Using uv (recommended)
+uv pip install git+https://github.com/your-org/equidade-data-package.git
+
+# For development (editable mode)
+git clone https://github.com/your-org/equidade-data-package.git
+cd equidade-data-package
+uv pip install -e .
+```
+
+### With Specific Branch or Tag
+
+```bash
+# Install from a specific branch
+uv pip install git+https://github.com/your-org/equidade-data-package.git@branch-name
+
+# Install from a specific tag/version
+uv pip install git+https://github.com/your-org/equidade-data-package.git@v0.1.0
+```
+
+## Usage
+
+### AWS S3 Parquet Loader
+
+Load treated data from S3 with automatic file discovery and schema handling:
+
+```python
+from equidade_data_package.aws.parquet_loader import load_treated_data
+
+# Load recent data for a specific agent
+df = load_treated_data(
+    agente="alunos",
+    aws_access_key="your-access-key",
+    aws_secret_key="your-secret-key",
+    only_recent=True,  # Load only the most recent files
+    max_files=10       # Limit to 10 files
+)
+
+print(f"Loaded {len(df)} rows")
+```
+
+### Google Cloud Storage
+
+Read and write various file formats from/to GCS:
+
+```python
+from equidade_data_package.gcp.storage import StorageService, DataFromStorage
+
+# Initialize storage service
+credentials = {...}  # Your GCP credentials dict
+storage_service = StorageService(credentials)
+data_loader = DataFromStorage(storage_service)
+
+# Load a parquet file
+df = data_loader.load_data(
+    bucket_name="my-bucket",
+    blob_path="path/to/file.parquet"
+)
+
+# Load a CSV file with custom parameters
+df = data_loader.load_data(
+    bucket_name="my-bucket",
+    blob_path="path/to/file.csv",
+    sep=";",
+    encoding="utf-8"
+)
+
+# Save a DataFrame as parquet
+data_loader.save_data(
+    data=df,
+    bucket_name="my-bucket",
+    blob_path="output/data.parquet",
+    compression="snappy"
+)
+
+# Close the connection when done
+storage_service.close()
+```
+
+### BigQuery Loader
+
+Load DataFrames into BigQuery with automatic type inference:
+
+```python
+from equidade_data_package.gcp.bigquery import BigQueryWaveLoader
+import pandas as pd
+
+# Initialize BigQuery loader
+credentials = {...}  # Your GCP credentials dict
+loader = BigQueryWaveLoader(
+    project_id="my-project",
+    credentials_json=credentials
+)
+
+# Load a DataFrame into BigQuery
+df = pd.read_csv("data.csv")
+success = loader.load_table(
+    df=df,
+    dataset_id="my_dataset",
+    table_name="my_table"
+)
+
+# Use safe loading for complex data with nulls
+success = loader.safe_load_to_bigquery(
+    df=df,
+    dataset_id="my_dataset",
+    table_name="my_table"
+)
+
+# Process wave data
+results = loader.process_wave(
+    wave_number=1,
+    base_path="/path/to/data",
+    file_mappings={
+        "students": "students_table",
+        "teachers": "teachers_table"
+    }
+)
+```
+
+## Package Structure
+
+```
+equidade-data-package/
+├── equidade_data_package/
+│   ├── __init__.py
+│   ├── aws/
+│   │   ├── __init__.py
+│   │   └── parquet_loader.py
+│   ├── gcp/
+│   │   ├── __init__.py
+│   │   ├── storage.py
+│   │   └── bigquery.py
+│   └── utils/
+│       └── __init__.py
+├── pyproject.toml
+├── README.md
+├── .gitignore
+└── LICENSE
+```
+
+## Dependencies
+
+The package requires:
+
+- pandas >= 2.0.0
+- pyarrow >= 19.0.0
+- numpy >= 2.0.0
+- google-cloud-storage >= 3.0.0
+- google-cloud-bigquery >= 3.0.0
+- google-api-python-client >= 2.0.0
+- google-auth >= 2.0.0
+- boto3 >= 1.0.0
+- botocore >= 1.0.0
+
+All dependencies are managed flexibly to ensure compatibility across different projects.
+
+## Development
+
+### Setting Up Development Environment
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/equidade-data-package.git
+cd equidade-data-package
+
+# Install with dev dependencies using uv
+uv pip install -e ".[dev]"
+
+# Run tests (when available)
+pytest
+
+# Format code
+black equidade_data_package/
+ruff check equidade_data_package/
+```
+
+## Adding to Your Project
+
+### Using pyproject.toml (recommended with uv)
+
+```toml
+[project]
+dependencies = [
+    "equidade-data-package @ git+https://github.com/your-org/equidade-data-package.git",
+    # ... other dependencies
+]
+```
+
+### Using requirements.txt
+
+```txt
+git+https://github.com/your-org/equidade-data-package.git
+```
+
+## Contributing
+
+1. Create a new branch for your feature
+2. Make your changes
+3. Ensure code follows the project style (use black and ruff)
+4. Submit a pull request
+
+## License
+
+MIT License - See LICENSE file for details
+
+## Support
+
+For issues, questions, or contributions, please contact the Equidade team.
