@@ -16,10 +16,10 @@ Data processing utilities for Equidade.info projects - AWS S3, GCP Storage, Goog
 
 ```bash
 # Using pip
-pip install git+https://github.com/your-org/equidade-data-package.git
+pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
 
 # Using uv (recommended)
-uv pip install git+https://github.com/your-org/equidade-data-package.git
+uv pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
 
 # For development (editable mode)
 git clone https://github.com/your-org/equidade-data-package.git
@@ -31,10 +31,10 @@ uv pip install -e .
 
 ```bash
 # Install from a specific branch
-uv pip install git+https://github.com/your-org/equidade-data-package.git@branch-name
+uv pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git@branch-name
 
 # Install from a specific tag/version
-uv pip install git+https://github.com/your-org/equidade-data-package.git@v0.1.0
+uv pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git@v0.1.0
 ```
 
 ## Usage
