@@ -315,7 +315,10 @@ class EnvLoader:
             self._yaml_path = Path(config.yaml_path)
         else:
             # Tentar encontrar o YAML no pacote
-            package_dir = Path(__file__).parent.parent.parent
+            # __file__ = .../equidade_data_package/config/env_loader.py
+            # parent = .../equidade_data_package/config/
+            # parent.parent = .../equidade_data_package/
+            package_dir = Path(__file__).parent.parent
             self._yaml_path = package_dir / "env-files" / "env-shared.yaml"
 
         # Carregar variáveis
