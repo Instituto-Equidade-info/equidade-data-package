@@ -8,14 +8,14 @@ Sistema centralizado de gerenciamento de variáveis de ambiente para Cloud Funct
 
 Adicione ao seu `requirements.txt`:
 ```txt
-git+https://github.com/your-org/equidade-data-package.git
+git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
 ```
 
 Ou `pyproject.toml`:
 ```toml
 [project]
 dependencies = [
-    "equidade-data-package @ git+https://github.com/your-org/equidade-data-package.git",
+    "equidade-data-package @ git+https://github.com/Instituto-Equidade-info/equidade-data-package.git",
 ]
 ```
 

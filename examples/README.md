@@ -76,7 +76,7 @@ env = EnvLoader(config)
 ### 1. Instalar o pacote
 
 ```bash
-pip install git+https://github.com/your-org/equidade-data-package.git
+pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
 ```
 
 ### 2. Executar exemplo local
@@ -260,7 +260,7 @@ print(f"Missing: {missing}")
 
 **Solução:** Instalar o pacote:
 ```bash
-pip install git+https://github.com/your-org/equidade-data-package.git
+pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
 ```
 
 ### ModuleNotFoundError: No module named 'yaml'
@@ -286,3 +286,6 @@ gcloud secrets list --project=equidade
 ---
 
 **Happy coding!** 🎉
+
+
+

@@ -63,14 +63,14 @@ Add the package dependency:
 
 **requirements.txt:**
 ```txt
-git+https://github.com/your-org/equidade-data-package.git
+git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
 ```
 
 **pyproject.toml:**
 ```toml
 [project]
 dependencies = [
-    "equidade-data-package @ git+https://github.com/your-org/equidade-data-package.git",
+    "equidade-data-package @ git+https://github.com/Instituto-Equidade-info/equidade-data-package.git",
 ]
 ```
 

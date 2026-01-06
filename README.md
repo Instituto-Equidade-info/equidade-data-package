@@ -23,7 +23,7 @@ pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package
 uv pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
 
 # For development (editable mode)
-git clone https://github.com/your-org/equidade-data-package.git
+git clone https://github.com/Instituto-Equidade-info/equidade-data-package.git
 cd equidade-data-package
 uv pip install -e .
 ```
@@ -321,7 +321,7 @@ All dependencies are managed flexibly to ensure compatibility across different p
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/equidade-data-package.git
+git clone https://github.com/Instituto-Equidade-info/equidade-data-package.git
 cd equidade-data-package
 
 # Install with dev dependencies using uv
@@ -342,7 +342,7 @@ ruff check equidade_data_package/
 ```toml
 [project]
 dependencies = [
-    "equidade-data-package @ git+https://github.com/your-org/equidade-data-package.git",
+    "equidade-data-package @ git+https://github.com/Instituto-Equidade-info/equidade-data-package.git",
     # ... other dependencies
 ]
 ```
@@ -350,7 +350,7 @@ dependencies = [
 ### Using requirements.txt
 
 ```txt
-git+https://github.com/your-org/equidade-data-package.git
+git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
 ```
 
 ## Contributing
