@@ -15,10 +15,12 @@ dependencies = [
     "numpy>=2.0.0",
     "google-cloud-storage>=3.0.0",
     "google-cloud-bigquery>=3.0.0",
+    "google-cloud-secret-manager>=2.0.0",
     "google-api-python-client>=2.0.0",
     "google-auth>=2.0.0",
     "boto3>=1.0.0",
     "botocore>=1.0.0",
+    "pyyaml>=6.0.0",
 ]
 
 [project.optional-dependencies]

@@ -1,0 +1,54 @@
+# Variáveis compartilhadas entre Cloud Functions
+# Projeto: equidade
+# Uso: gcloud functions deploy FUNC --env-vars-file=env-shared.yaml
+
+# === AWS ===
+AWS_REGION: us-east-1
+
+# === BIGQUERY ===
+BIGQUERY_DATASET_ACCESS: access_logs
+BIGQUERY_TABLE_LOGS: access_logs
+BIGQUERY_TABLE_REQUESTS: requests
+
+# === DOCUSIGN ===
+DOCUSIGN_ACCOUNT_ID: a6e54a53-8081-482c-941c-a81c38ba8811
+DOCUSIGN_API_BASE_URL: "https://na2.docusign.net/restapi/v2.1"
+DOCUSIGN_BASE_URL: "https://na2.docusign.net"
+DOCUSIGN_ENVIRONMENT: production
+DOCUSIGN_TEMPLATE_DASH: aea6ddc6-0171-42d5-b8bf-e0d726805ccd
+DOCUSIGN_TEMPLATE_DATA: aea6ddc6-0171-42d5-b8bf-e0d726805ccd
+DOCUSIGN_TEMPLATE_TEMP: 6eae5376-5d3a-4170-9d67-56300dedb973
+
+# === GCP ===
+GCP_PROJECT_ID: equidade
+GCP_REGION: southamerica-east1
+GCP_WEBHOOK_URL: "https://southamerica-east1-equidade.cloudfunctions.net/docusign-webhook"
+
+# === GMAIL ===
+GMAIL_IMPERSONATE_USER: "dados@equidade.info"
+
+# === GOOGLE ===
+GOOGLE_DRIVE_FOLDER_EDITAIS: 1PogMeBSlRru_znjY3IbbYXUlk-xhusIB
+
+# === MAX ===
+MAX_WAITING_TIME: 3600
+
+# === MIN ===
+MIN_UPDATES_TO_TRIGGER: 3
+
+# === OTHER ===
+ENVIRONMENT: production
+
+# === PROJECT ===
+PROJECT_ID: equidade
+
+# === SLACK ===
+SLACK_CHANNEL_ACCESS_LOGS: C0880Q6SU75
+
+# === STRAPI ===
+STRAPI_BASE_URL: "http://cms.equidade.info"
+
+# === SURVEYCTO ===
+SURVEYCTO_SERVER: ccwd
+SURVEYCTO_USERNAME: "dados@equidade.info"
+

@@ -4,6 +4,7 @@ Data processing utilities for Equidade.info projects - AWS S3, GCP Storage, Goog
 
 ## Features
 
+- **Environment Configuration**: Centralized environment variable management with YAML and Secret Manager support
 - **AWS S3 Parquet Loader**: Robust parquet file loading from S3 with automatic schema handling
 - **GCP Storage**: Read/write various file formats (Parquet, CSV, Excel, JSON) from Google Cloud Storage
 - **Google Drive**: Download and read files, Google Sheets, and Excel files from Google Drive
@@ -38,6 +39,72 @@ uv pip install git+https://github.com/Instituto-Equidade-info/equidade-data-pack
 ```
 
 ## Usage
+
+### Environment Configuration
+
+Centralized environment variable management for Cloud Functions, eliminating duplication across repositories:
+
+```python
+from equidade_data_package.config import load_env
+
+# Quick setup - loads env vars from YAML and Secret Manager
+env = load_env("equidade-download-data")
+
+# Get individual variables
+slack_token = env.get("SLACK_BOT_TOKEN")
+credentials = env.get_json("CREDENTIALS")  # Parses JSON automatically
+max_retries = env.get_int("MAX_RETRIES", default=3)
+debug_mode = env.get_bool("DEBUG", default=False)
+
+# Or use advanced configuration
+from equidade_data_package.config import EnvLoader, EnvConfig
+
+config = EnvConfig(
+    function_name="etl-surveycto-function",
+    project_id="equidade",
+    region="southamerica-east1",
+    yaml_path="/custom/path/env-shared.yaml",  # Optional
+    use_secret_manager=True,
+    cache_secrets=True
+)
+env = EnvLoader(config)
+
+# Set all vars to os.environ for the entire application
+env.set_environment()
+
+# Validate required variables
+is_valid, missing = env.validate()
+if not is_valid:
+    raise ValueError(f"Missing required env vars: {missing}")
+
+# Get all loaded variables
+all_vars = env.get_all()
+```
+
+**How it works:**
+
+1. **YAML Configuration** (`env-files/env-shared.yaml`): Non-sensitive shared values (URLs, IDs, etc.)
+2. **Secret Manager**: Sensitive data (tokens, credentials, passwords)
+3. **Runtime Environment**: Highest priority (Cloud Function env vars)
+
+**Function-specific variable mapping:**
+
+The loader automatically knows which variables each Cloud Function needs. Currently supports:
+- `equidade-download-data`
+- `access-processor`, `access-manager`, `access-revocation`
+- `etl-surveycto-function`
+- `check-s3-files`
+- `consistency_checker_function`
+- `gf_raw_data_function`, `gf_treatment_data_function`
+- `pi_raw_data_function`, `pi_treatment_data_function`
+- And 10+ other functions
+
+**Secret Manager naming:**
+
+Secrets are automatically mapped using a consistent naming convention:
+- `SLACK_BOT_TOKEN` → `slack-bot-token-{function-name}` (function-specific)
+- `AWS_ACCESS_KEY_ID` → `aws-access-key-id` (shared)
+- `CREDENTIALS` → `credentials-{function-name}` (function-specific)
 
 ### AWS S3 Parquet Loader
 
@@ -209,6 +276,9 @@ results = loader.process_wave(
 equidade-data-package/
 ├── equidade_data_package/
 │   ├── __init__.py
+│   ├── config/              # Environment configuration
+│   │   ├── __init__.py
+│   │   └── env_loader.py
 │   ├── aws/
 │   │   ├── __init__.py
 │   │   └── parquet_loader.py
@@ -219,6 +289,8 @@ equidade-data-package/
 │   │   └── drive.py
 │   └── utils/
 │       └── __init__.py
+├── env-files/
+│   └── env-shared.yaml      # Shared environment variables
 ├── pyproject.toml
 ├── README.md
 ├── .gitignore
@@ -234,10 +306,12 @@ The package requires:
 - numpy >= 2.0.0
 - google-cloud-storage >= 3.0.0
 - google-cloud-bigquery >= 3.0.0
+- google-cloud-secret-manager >= 2.0.0
 - google-api-python-client >= 2.0.0
 - google-auth >= 2.0.0
 - boto3 >= 1.0.0
 - botocore >= 1.0.0
+- pyyaml >= 6.0.0
 
 All dependencies are managed flexibly to ensure compatibility across different projects.
 
