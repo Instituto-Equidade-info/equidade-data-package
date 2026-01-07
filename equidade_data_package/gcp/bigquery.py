@@ -617,3 +617,90 @@ class BigQueryWaveLoader:
                 results[table_name] = False
 
         return results
+    
+    def load_incremental(self, df: pd.DataFrame, dataset_id: str, table_name: str) -> bool:
+        """
+        Carrega dados de forma incremental (append) para uma tabela do BigQuery.
+        Mesma assinatura do load_table, mas faz append em vez de sobrescrever.
+        
+        Args:
+            df: DataFrame com os dados a serem carregados
+            dataset_id: ID do dataset no BigQuery
+            table_name: Nome da tabela
+        
+        Returns:
+            bool: True se o carregamento foi bem-sucedido, False caso contrário
+        """
+        try:
+            df = df.copy()
+            
+            # Limpar nomes das colunas (mesmo processo do load_table)
+            df.columns = df.columns.str.strip()
+            df.columns = df.columns.str.replace('[^0-9a-zA-Z_]', '_', regex=True)
+            df.columns = df.columns.str.replace('__+', '_', regex=True)
+            df.columns = df.columns.str.rstrip('_')
+
+            self.logger.info(f"Colunas após limpeza: {list(df.columns)}")
+            
+            # Configurar a tabela de destino
+            table_id = f"{self.project_id}.{dataset_id}.{table_name}"
+            
+            # Verificar se a tabela existe para decidir o schema
+            try:
+                table = self.client.get_table(table_id)
+                # Tabela existe - usar schema existente
+                existing_schema = table.schema
+                df = self._align_dataframe_to_existing_schema(df, existing_schema)
+                schema = existing_schema
+                self.logger.info(f"Tabela {table_name} já existe. Fazendo append dos dados.")
+                
+            except Exception:
+                # Tabela não existe - inferir schema como no load_table
+                df, schema = self.infer_and_convert_types(df)
+                self.logger.info(f"Tabela {table_name} não existe. Criando nova tabela.")
+            
+            # Configurar job de carregamento para APPEND
+            job_config = bigquery.LoadJobConfig(
+                schema=schema,
+                write_disposition=bigquery.WriteDisposition.WRITE_APPEND
+            )
+            
+            # Carregar dados para o BigQuery
+            job = self.client.load_table_from_dataframe(
+                df, table_id, job_config=job_config
+            )
+            job.result()
+            
+            self.logger.info(f"Dados carregados incrementalmente na tabela {table_name} "
+                            f"no dataset {dataset_id}! {len(df)} registros adicionados.")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao carregar incrementalmente {table_name} "
+                            f"no dataset {dataset_id}: {str(e)}")
+            return False
+
+    def _align_dataframe_to_existing_schema(self, df: pd.DataFrame, schema: List[bigquery.SchemaField]) -> pd.DataFrame:
+        """
+        Alinha o DataFrame ao schema existente da tabela para garantir compatibilidade.
+        """
+        for field in schema:
+            column_name = field.name
+            field_type = field.field_type
+            
+            if column_name in df.columns:
+                # Converter coluna existente para o tipo correto baseado no schema
+                if field_type == 'STRING' or column_name in self.string_columns:
+                    df[column_name] = df[column_name].fillna('').astype(str)
+                elif field_type in ['INTEGER', 'INT64']:
+                    df[column_name] = pd.to_numeric(df[column_name], errors='coerce').astype('Int64')
+                elif field_type in ['FLOAT', 'FLOAT64']:
+                    df[column_name] = pd.to_numeric(df[column_name], errors='coerce')
+                elif field_type in ['DATETIME', 'TIMESTAMP'] or column_name in self.date_columns:
+                    try:
+                        df[column_name] = pd.to_datetime(df[column_name], errors='coerce')
+                    except:
+                        df[column_name] = df[column_name].fillna('').astype(str)
+        
+        return df
+# Exemplo de uso:
