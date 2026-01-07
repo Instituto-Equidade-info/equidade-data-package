@@ -278,7 +278,7 @@ class EnvLoader:
     # Mapeamento de variáveis de ambiente para nomes de secrets no Secret Manager
     # Secrets com sufixos específicos por função para evitar conflitos
     SECRET_NAME_MAP = {
-        # Secrets compartilhados (sem sufixo)
+        # Secrets compartilhados (sem sufixo) 
         "DOCUSIGN_CLIENT_SECRET": "docusign-client-secret",
         "DOCUSIGN_INTEGRATION_KEY": "docusign-integration-key",
         "GMAIL_TOKEN_DATA": "gmail-token-data",
@@ -413,8 +413,11 @@ class EnvLoader:
         Returns:
             True if variable should come from Secret Manager
         """
-        # Lista de prefixos de variáveis sensíveis
-        secret_prefixes = [
+        # Lista de palavras-chave de variáveis sensíveis
+        # Verificamos se CONTÉM (não apenas startswith) para pegar casos como:
+        # - DOCUSIGN_INTEGRATION_KEY (contém "KEY")
+        # - DOCUSIGN_CLIENT_SECRET (contém "SECRET")
+        secret_keywords = [
             "CREDENTIALS",
             "TOKEN",
             "KEY",
@@ -424,7 +427,7 @@ class EnvLoader:
             "AUTORIZATION",  # Typo no nome original
         ]
 
-        return any(var_name.startswith(prefix) for prefix in secret_prefixes)
+        return any(keyword in var_name for keyword in secret_keywords)
 
     def _get_secret_name(self, var_name: str) -> Optional[str]:
         """
