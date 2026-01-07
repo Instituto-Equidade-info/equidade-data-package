@@ -290,6 +290,7 @@ class EnvLoader:
         "SURVEYCTO_PASSWORD": "surveycto-password",
         "TOKEN_GITHUB": "token-github",
         "CREDENTIALS": "credentials-pi-raw-data-function",
+        "SLACK_BOT_TOKEN" : "slack-bot-token-consistency-checker-function",
         # Secrets específicos por função (com sufixo)
         "CREDENTIALS_equidade-download-data": "credentials-equidade-download-data",
         "CREDENTIALS_pi_raw_data_function": "credentials-pi-raw-data-function",
