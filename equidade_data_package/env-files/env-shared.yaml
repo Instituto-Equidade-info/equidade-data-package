@@ -19,6 +19,27 @@ DOCUSIGN_TEMPLATE_DASH: aea6ddc6-0171-42d5-b8bf-e0d726805ccd
 DOCUSIGN_TEMPLATE_DATA: aea6ddc6-0171-42d5-b8bf-e0d726805ccd
 DOCUSIGN_TEMPLATE_TEMP: 6eae5376-5d3a-4170-9d67-56300dedb973
 
+# Variáveis específicas: process-dataset-updates
+
+CSV_FILE_ID: 1uxYCkvdLIxN0sklcaInjO1oqvOrQLGTa
+DICT_ESCOLA: 1_7PYAVezzDc4fFyza3Ecd3SbgSxy17dp0e09pVcuSN4
+EXCEL_FILE_ID: 1RfGHwMwFK0FAxZzWa-rMq8ggRixpwyq9
+
+# Variáveis específicas: consistency_checker_function
+
+AUTORIZATION_BLIP: Key ZXF1aWRhZGVyb3V0ZXI6ME56YU1BamUyUHVGTkxOa2VrakY=
+
+# Variáveis específicas: check-s3-files
+
+DATA_PROCESSING_TOPIC: data-processing-trigger
+GCP_PROJECT: equidade
+SLACK_CHANNEL: C0880Q6SU75
+
+
+# Variáveis específicas: equidade-download-data
+
+LOG_EXECUTION_ID: true
+
 # === GCP ===
 GCP_PROJECT_ID: equidade
 GCP_REGION: southamerica-east1
