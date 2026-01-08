@@ -703,4 +703,15 @@ class BigQueryWaveLoader:
                         df[column_name] = df[column_name].fillna('').astype(str)
         
         return df
+    
+    def close(self):
+        """Fecha a conexão com o Storage"""
+        if self.client:
+            try:
+                self.client.close()
+                self.client = None
+                logging.info("Cliente Storage fechado com sucesso")
+            except Exception as e:
+                logging.error(f"Erro ao fechar cliente Storage: {str(e)}")
+                raise
 # Exemplo de uso:
