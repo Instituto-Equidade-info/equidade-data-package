@@ -1,0 +1,105 @@
+# Example workflow for Cloud Function repositories
+# Copy this to .github/workflows/ in your Cloud Function repos
+
+name: Deploy Cloud Function on Package Update
+
+on:
+  # Triggered by equidade-data-package updates
+  repository_dispatch:
+    types: [package-updated]
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      package_version:
+        description: 'equidade-data-package version (leave empty for latest)'
+        required: false
+        default: ''
+
+  # Also trigger on direct pushes to main
+  push:
+    branches:
+      - main
+
+env:
+  FUNCTION_NAME: your-cloud-function-name
+  REGION: us-central1
+  RUNTIME: python311
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Determine package version
+        id: package_version
+        run: |
+          if [ -n "${{ github.event.client_payload.version }}" ]; then
+            VERSION="${{ github.event.client_payload.version }}"
+            echo "Using version from trigger: ${VERSION}"
+          elif [ -n "${{ github.event.inputs.package_version }}" ]; then
+            VERSION="${{ github.event.inputs.package_version }}"
+            echo "Using manual input version: ${VERSION}"
+          else
+            VERSION="latest"
+            echo "Using latest version"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Update package version in requirements.txt
+        run: |
+          VERSION="${{ steps.package_version.outputs.version }}"
+          if [ "${VERSION}" = "latest" ]; then
+            # Update to latest without version pin
+            sed -i 's/equidade-data-package==.*/equidade-data-package/' requirements.txt
+          else
+            # Update to specific version
+            VERSION_NUM="${VERSION#v}"  # Remove 'v' prefix if present
+            sed -i "s/equidade-data-package.*/equidade-data-package==${VERSION_NUM}/" requirements.txt
+          fi
+
+          echo "Updated requirements.txt:"
+          grep equidade-data-package requirements.txt
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy Cloud Function
+        run: |
+          gcloud functions deploy ${{ env.FUNCTION_NAME }} \
+            --region=${{ env.REGION }} \
+            --runtime=${{ env.RUNTIME }} \
+            --trigger-http \
+            --allow-unauthenticated \
+            --entry-point=main \
+            --source=. \
+            --max-instances=10 \
+            --memory=512MB \
+            --timeout=540s
+
+      - name: Verify deployment
+        run: |
+          gcloud functions describe ${{ env.FUNCTION_NAME }} \
+            --region=${{ env.REGION }} \
+            --format="value(status)"
+
+      - name: Comment on trigger (if from repository_dispatch)
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          echo "Deployment triggered by package update:"
+          echo "Package: ${{ github.event.client_payload.package }}"
+          echo "Version: ${{ github.event.client_payload.version }}"
+          echo "Triggered by: ${{ github.event.client_payload.triggered_by }}"

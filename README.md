@@ -2,6 +2,25 @@
 
 Data processing utilities for Equidade.info projects - AWS S3, GCP Storage, Google Drive, and BigQuery loaders.
 
+## 🚀 Automated Deployments
+
+This package now supports **automatic deployments** to all Cloud Functions when a new version is released!
+
+- ✅ One release triggers deploys in all dependent repos
+- ✅ No manual updates needed
+- ✅ Works with your existing workflows - just add 3 lines!
+- ✅ Easy setup with automated scripts
+
+```bash
+# Setup (one time)
+./scripts/patch-workflows.sh  # Adds trigger to all repos
+
+# Daily use
+./scripts/release.sh          # Creates release → all functions deploy automatically
+```
+
+**Quick Start**: [QUICKSTART.md](QUICKSTART.md) | **Full Guide**: [DEPLOY_AUTOMATION.md](DEPLOY_AUTOMATION.md) | **Patch Guide**: [PATCH_EXISTING_WORKFLOWS.md](PATCH_EXISTING_WORKFLOWS.md)
+
 ## Features
 
 - **Environment Configuration**: Centralized environment variable management with YAML and Secret Manager support

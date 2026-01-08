@@ -1,0 +1,82 @@
+name: Trigger Deploys on Package Update
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version to deploy'
+        required: false
+        default: 'latest'
+
+jobs:
+  trigger-dependent-repos:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Add repository names (org prefix will be added automatically)
+        repo:
+          - 'equidade-download-data-function'
+          - 'iu-file-checker-function'
+          - 'gf_treatment_data_function'
+          - 'gf_raw_data_function'
+          - 'iu-dataset-update-function'
+          - 'consistency_checker_function'
+          - 'pi_treatment_data_function'
+          - 'pi_raw_data_function'
+          - 'etl-surveycto-function'
+          - 'dataset-update-function'
+          - 'equidade-data-package'
+          - equidade-access-cloud-functions
+          - trigger-dash
+          # Add more repository names here
+      fail-fast: false
+
+    env:
+      # Set your GitHub organization name here
+      GITHUB_ORG: 'Instituto-Equidade-info'  # CHANGE THIS
+
+    steps:
+      - name: Get package version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Triggering deploy for version: ${VERSION}"
+
+      - name: Trigger deploy in ${{ env.GITHUB_ORG }}/${{ matrix.repo }}
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.DEPLOY_TRIGGER_TOKEN }}
+          repository: ${{ env.GITHUB_ORG }}/${{ matrix.repo }}
+          event-type: package-updated
+          client-payload: |
+            {
+              "package": "equidade-data-package",
+              "version": "${{ steps.version.outputs.version }}",
+              "triggered_by": "${{ github.actor }}",
+              "source_repo": "${{ github.repository }}",
+              "repo_name": "${{ matrix.repo }}"
+            }
+
+  notify-completion:
+    needs: trigger-dependent-repos
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Deploy Triggers Summary" >> $GITHUB_STEP_SUMMARY
+          echo "Package version: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Triggered at: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.trigger-dependent-repos.result }}" >> $GITHUB_STEP_SUMMARY
