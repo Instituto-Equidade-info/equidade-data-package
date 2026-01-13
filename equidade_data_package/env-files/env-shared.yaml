@@ -73,3 +73,7 @@ STRAPI_BASE_URL: "http://cms.equidade.info"
 SURVEYCTO_SERVER: ccwd
 SURVEYCTO_USERNAME: "dados@equidade.info"
 
+# === STF_ETL ===
+SURVEY_ID : "SV_exSroBoLLAf8406"
+API_URL_BASE : f"https://ca1.qualtrics.com/API/v3/surveys/{SURVEY_ID}/export-responses"
+NOME_ARQUIVO_CSV_NO_ZIP : f"{SURVEY_ID}.csv"

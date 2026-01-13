@@ -273,6 +273,15 @@ class EnvLoader:
             "SURVEYCTO_SERVER",
             "SURVEYCTO_USERNAME",
         ],
+        "stf-etl-qualtrics": ["SURVEY_ID",
+                                "API_URL_BASE",
+                                "QUALTRICS_API_TOKEN",
+                                "NOME_ARQUIVO_CSV_NO_ZIP",
+                                "CAMINHO_DADOS",
+                                "NOME_ARQUIVO_FINAL",
+                                "CAMINHO_ARQUIVO_FINAL",
+                                "CREDENTIALS",
+                            ],
     }
 
     # Mapeamento de variáveis de ambiente para nomes de secrets no Secret Manager
@@ -285,6 +294,7 @@ class EnvLoader:
         "GOOGLE_SERVICE_ACCOUNT_KEY": "google-service-account-key",
         "SLACK_BOT_TOKEN_ACCESS": "slack-bot-token-access",
         "STRAPI_TOKEN": "strapi-token",
+        "QUALTRICS_API_TOKEN": "qualtrics-api-token",
         "AWS_ACCESS_KEY_ID": "aws-access-key-id",
         "AWS_SECRET_ACCESS_KEY": "aws-secret-access-key",
         "SURVEYCTO_PASSWORD": "surveycto-password",
