@@ -279,7 +279,7 @@ class EnvLoader:
                                 "NOME_ARQUIVO_CSV_NO_ZIP",
                                 "CREDENTIALS",
                                 "SLACK_BOT_TOKEN",
-                                "SLACK_CHANNEL"
+                                "SLACK_CHANNEL_FLUENCY"
                             ],
     }
 
