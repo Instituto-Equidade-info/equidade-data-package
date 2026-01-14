@@ -277,10 +277,9 @@ class EnvLoader:
                                 "API_URL_BASE",
                                 "QUALTRICS_API_TOKEN",
                                 "NOME_ARQUIVO_CSV_NO_ZIP",
-                                "CAMINHO_DADOS",
-                                "NOME_ARQUIVO_FINAL",
-                                "CAMINHO_ARQUIVO_FINAL",
                                 "CREDENTIALS",
+                                "SLACK_BOT_TOKEN",
+                                "SLACK_CHANNEL"
                             ],
     }
 
