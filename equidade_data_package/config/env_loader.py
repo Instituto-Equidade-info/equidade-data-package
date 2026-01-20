@@ -281,6 +281,10 @@ class EnvLoader:
                                 "SLACK_BOT_TOKEN",
                                 "SLACK_CHANNEL_FLUENCY"
                             ],
+
+
+        "stf-treatment-function" : [ "CREDENTIALS", "SLACK_BOT_TOKEN" ],
+
     }
 
     # Mapeamento de variáveis de ambiente para nomes de secrets no Secret Manager
