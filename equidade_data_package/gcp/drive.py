@@ -3,7 +3,8 @@
 import pandas as pd
 import io
 import logging
-from typing import Dict, List, Optional
+from datetime import datetime
+from typing import Dict, List, Optional, Union
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
@@ -205,4 +206,196 @@ class DataFromDrive:
 
         except Exception as e:
             logging.error(f"Erro ao ler abas do Excel: {str(e)}")
+            raise
+
+    def list_files_in_folder(
+        self,
+        folder_id: str,
+        fields: Optional[List[str]] = None,
+        page_size: int = 100,
+        include_trashed: bool = False,
+    ) -> List[Dict]:
+        """
+        List all files in a Google Drive folder.
+
+        Args:
+            folder_id: ID of the folder in Google Drive
+            fields: List of fields to return for each file.
+                    Default: ["id", "name", "mimeType"]
+                    Available: id, name, mimeType, size, createdTime, modifiedTime,
+                              owners, parents, webViewLink, etc.
+            page_size: Number of files per page (max 1000)
+            include_trashed: Whether to include trashed files
+
+        Returns:
+            List[Dict]: List of file metadata dictionaries
+
+        Raises:
+            Exception: If listing fails
+        """
+        try:
+            service = self.drive_service.get_service()
+
+            if fields is None:
+                fields = ["id", "name", "mimeType"]
+
+            fields_str = f"nextPageToken, files({', '.join(fields)})"
+
+            query = f"'{folder_id}' in parents"
+            if not include_trashed:
+                query += " and trashed = false"
+
+            all_files = []
+            page_token = None
+
+            while True:
+                response = (
+                    service.files()
+                    .list(
+                        q=query,
+                        pageSize=page_size,
+                        fields=fields_str,
+                        pageToken=page_token,
+                    )
+                    .execute()
+                )
+
+                files = response.get("files", [])
+                all_files.extend(files)
+
+                page_token = response.get("nextPageToken")
+                if not page_token:
+                    break
+
+            logging.info(
+                f"Listados {len(all_files)} arquivos da pasta {folder_id}"
+            )
+            return all_files
+
+        except Exception as e:
+            logging.error(f"Erro ao listar arquivos da pasta: {str(e)}")
+            raise
+
+    def get_file_by_id(self, file_id: str, fields: Optional[List[str]] = None) -> Dict:
+        """
+        Get file metadata by its ID.
+
+        Args:
+            file_id: ID of the file in Google Drive
+            fields: List of fields to return.
+                    Default: ["id", "name", "mimeType", "size", "modifiedTime"]
+
+        Returns:
+            Dict: File metadata dictionary
+
+        Raises:
+            Exception: If fetching fails
+        """
+        try:
+            service = self.drive_service.get_service()
+
+            if fields is None:
+                fields = ["id", "name", "mimeType", "size", "modifiedTime"]
+
+            fields_str = ", ".join(fields)
+
+            file_metadata = (
+                service.files().get(fileId=file_id, fields=fields_str).execute()
+            )
+
+            logging.info(f"Metadados do arquivo {file_id} obtidos com sucesso")
+            return file_metadata
+
+        except Exception as e:
+            logging.error(f"Erro ao obter metadados do arquivo: {str(e)}")
+            raise
+
+    def list_files_modified_after(
+        self,
+        folder_id: str,
+        modified_after: Union[str, datetime],
+        fields: Optional[List[str]] = None,
+        page_size: int = 100,
+    ) -> List[Dict]:
+        """
+        List files in a folder modified after a specific date.
+
+        Args:
+            folder_id: ID of the folder in Google Drive
+            modified_after: Date threshold. Can be:
+                           - datetime object
+                           - ISO format string (e.g., "2024-01-15T00:00:00")
+                           - Simple date string (e.g., "2024-01-15")
+            fields: List of fields to return for each file.
+                    Default: ["id", "name", "mimeType", "modifiedTime"]
+            page_size: Number of files per page (max 1000)
+
+        Returns:
+            List[Dict]: List of file metadata dictionaries sorted by modifiedTime
+
+        Raises:
+            Exception: If listing fails
+        """
+        try:
+            service = self.drive_service.get_service()
+
+            # Convert datetime to RFC 3339 format
+            if isinstance(modified_after, datetime):
+                date_str = modified_after.strftime("%Y-%m-%dT%H:%M:%S")
+            elif isinstance(modified_after, str):
+                # Handle simple date format
+                if "T" not in modified_after:
+                    date_str = f"{modified_after}T00:00:00"
+                else:
+                    date_str = modified_after
+            else:
+                raise ValueError(
+                    "modified_after deve ser datetime ou string no formato ISO"
+                )
+
+            if fields is None:
+                fields = ["id", "name", "mimeType", "modifiedTime"]
+
+            # Ensure modifiedTime is in fields for sorting
+            if "modifiedTime" not in fields:
+                fields = fields + ["modifiedTime"]
+
+            fields_str = f"nextPageToken, files({', '.join(fields)})"
+
+            query = (
+                f"'{folder_id}' in parents "
+                f"and modifiedTime > '{date_str}' "
+                f"and trashed = false"
+            )
+
+            all_files = []
+            page_token = None
+
+            while True:
+                response = (
+                    service.files()
+                    .list(
+                        q=query,
+                        pageSize=page_size,
+                        fields=fields_str,
+                        orderBy="modifiedTime desc",
+                        pageToken=page_token,
+                    )
+                    .execute()
+                )
+
+                files = response.get("files", [])
+                all_files.extend(files)
+
+                page_token = response.get("nextPageToken")
+                if not page_token:
+                    break
+
+            logging.info(
+                f"Encontrados {len(all_files)} arquivos modificados após {date_str}"
+            )
+            return all_files
+
+        except Exception as e:
+            logging.error(f"Erro ao listar arquivos por data: {str(e)}")
             raise
