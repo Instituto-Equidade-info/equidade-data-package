@@ -334,7 +334,7 @@ class BigQueryWaveLoader:
             df = df.copy()
 
             # Clean empty values and whitespace in all columns
-            df = df.applymap(
+            df = df.map(
                 lambda x: np.nan if isinstance(x, str) and x.strip() == "" else x
             )
             df = df.replace(["", "nan", "None", "null"], np.nan)
