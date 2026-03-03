@@ -49,7 +49,7 @@ GCP_WEBHOOK_URL: "https://southamerica-east1-equidade.cloudfunctions.net/docusig
 GMAIL_IMPERSONATE_USER: "dados@equidade.info"
 
 # === GOOGLE ===
-GOOGLE_DRIVE_FOLDER_EDITAIS: 1PogMeBSlRru_znjY3IbbYXUlk-xhusIB
+GOOGLE_DRIVE_FOLDER_EDITAIS: 1G0dWukGGAluWc0yQ6P1d69KR6haCgSFB
 
 # === MAX ===
 MAX_WAITING_TIME: 3600
