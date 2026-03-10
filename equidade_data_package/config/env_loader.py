@@ -285,12 +285,18 @@ class EnvLoader:
 
         "stf-treatment-function" : [ "CREDENTIALS", "SLACK_BOT_TOKEN" ],
 
-    }
+        "twilio-functions" : [ "TWILIO_ACCOUNT_SID", "TWILIO_WHATSAPP_NUMBER", "CONTENT_SID", "CREDENTIALS",'TWILIO_AUTH_TOKEN' ]
+
+    } 
+
+
 
     # Mapeamento de variáveis de ambiente para nomes de secrets no Secret Manager
     # Secrets com sufixos específicos por função para evitar conflitos
     SECRET_NAME_MAP = {
         # Secrets compartilhados (sem sufixo) 
+        'TWILIO_ACCOUNT_SID': "twilio_account_sid",
+        "TWILIO_AUTH_TOKEN" : "twilio_auth_token",
         "DOCUSIGN_CLIENT_SECRET": "docusign-client-secret",
         "DOCUSIGN_INTEGRATION_KEY": "docusign-integration-key",
         "GMAIL_TOKEN_DATA": "gmail-token-data",
