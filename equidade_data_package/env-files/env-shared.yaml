@@ -74,9 +74,9 @@ SURVEYCTO_SERVER: ccwd
 SURVEYCTO_USERNAME: "dados@equidade.info"
 
 # === STF_ETL ===
-SURVEY_ID : "SV_exSroBoLLAf8406"
-API_URL_BASE : f"https://ca1.qualtrics.com/API/v3/surveys/{SURVEY_ID}/export-responses"
-NOME_ARQUIVO_CSV_NO_ZIP : f"{SURVEY_ID}.csv"
+SURVEY_ID: "SV_exSroBoLLAf8406"
+API_URL_BASE: "https://ca1.qualtrics.com/API/v3/surveys/SV_exSroBoLLAf8406/export-responses"
+NOME_ARQUIVO_CSV_NO_ZIP: "SV_exSroBoLLAf8406.csv"
 SLACK_CHANNEL_FLUENCY : C0A8N3088AH
 FORM_ID : teste_fluencia_leitura
  
