@@ -273,17 +273,18 @@ class EnvLoader:
             "SURVEYCTO_SERVER",
             "SURVEYCTO_USERNAME",
         ],
+
         "stf-etl-qualtrics": ["SURVEY_ID",
                                 "API_URL_BASE",
                                 "QUALTRICS_API_TOKEN",
                                 "SURVEYCTO_PASSWORD",
                                 "SURVEYCTO_SERVER",
-                                "SURVEYCTO_USERNAME"
+                                "SURVEYCTO_USERNAME",
                                 "NOME_ARQUIVO_CSV_NO_ZIP",
                                 "CREDENTIALS",
                                 "SLACK_BOT_TOKEN",
                                 "SLACK_CHANNEL_FLUENCY",
-                                "FORM_ID"
+                                "FORM_ID",
                             ],
 
 
