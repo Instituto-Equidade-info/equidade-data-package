@@ -288,7 +288,8 @@ class EnvLoader:
                             ],
 
 
-        "stf-treatment-function" : [ "CREDENTIALS", "SLACK_BOT_TOKEN" ],
+        "stf-treatment-function" : [ "CREDENTIALS", "SLACK_BOT_TOKEN"  ,"SURVEYCTO_SERVER",
+                                "SURVEYCTO_USERNAME"],
 
         "twilio-functions" : [ "TWILIO_ACCOUNT_SID", "TWILIO_WHATSAPP_NUMBER", "CONTENT_SID", "CREDENTIALS",'TWILIO_AUTH_TOKEN' ]
 
