@@ -337,7 +337,7 @@ class BigQueryWaveLoader:
             df = df.map(
                 lambda x: np.nan if isinstance(x, str) and x.strip() == "" else x
             )
-            df = df.replace(["", "nan", "None", "null"], np.nan)
+            df = df.replace(["",'', "nan", "None", "null"], np.nan)
 
             # Clean column names
             df = self._clean_column_names(df)
@@ -434,7 +434,7 @@ class BigQueryWaveLoader:
             df = self._clean_column_names(df)
 
             # Step 2: Standardize null values
-            df = df.replace(["", " ", "None", "null", "nan"], np.nan)
+            df = df.replace(["", " ",'', "None", "null", "nan"], np.nan)
 
             # Step 3: Create a schema with better type detection
             schema = []
