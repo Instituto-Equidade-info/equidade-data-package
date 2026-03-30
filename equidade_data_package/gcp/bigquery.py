@@ -517,13 +517,13 @@ class BigQueryWaveLoader:
             # Step 4: Double-check numeric columns for any remaining issues
             for col, field in zip(clean_df.columns, schema):
                 if field.field_type in ["FLOAT", "INTEGER"]:
-                    # Ensure there are no string values
-                    numeric_col = pd.to_numeric(
-                        clean_df[col].replace(["", "nan", "<NA>"], np.nan),
-                        errors="coerce",
-                    )
+                    # Convert to numeric, handling empty strings, string "nan"/"<NA>" and pd.NA
+                    series = clean_df[col]
+                    # Replace string sentinels and actual pd.NA/np.nan uniformly
+                    if series.dtype == object:
+                        series = series.replace(["", " ", "nan", "None", "null", "<NA>"], np.nan)
+                    numeric_col = pd.to_numeric(series, errors="coerce")
                     if field.field_type == "INTEGER":
-                        # Re-cast to nullable Int64 so pyarrow doesn't receive float64
                         clean_df[col] = numeric_col.astype("Int64")
                     else:
                         clean_df[col] = numeric_col
