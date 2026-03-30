@@ -518,10 +518,15 @@ class BigQueryWaveLoader:
             for col, field in zip(clean_df.columns, schema):
                 if field.field_type in ["FLOAT", "INTEGER"]:
                     # Ensure there are no string values
-                    clean_df[col] = pd.to_numeric(
+                    numeric_col = pd.to_numeric(
                         clean_df[col].replace(["", "nan", "<NA>"], np.nan),
                         errors="coerce",
                     )
+                    if field.field_type == "INTEGER":
+                        # Re-cast to nullable Int64 so pyarrow doesn't receive float64
+                        clean_df[col] = numeric_col.astype("Int64")
+                    else:
+                        clean_df[col] = numeric_col
 
             # Step 5: Log information for debugging
             self.logger.info(f"Prepared {len(clean_df.columns)} columns for BigQuery")
