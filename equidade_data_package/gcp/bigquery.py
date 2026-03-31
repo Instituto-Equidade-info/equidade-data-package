@@ -498,8 +498,9 @@ class BigQueryWaveLoader:
                         )
                         numeric_series = pd.to_numeric(cleaned_values, errors="coerce")
                     else:
-                        # Already numeric column
-                        numeric_series = df[column]
+                        # Already numeric: normalize to float64 so .equals(astype(int)) comparison
+                        # works regardless of whether input is int64, Int64, float64, etc.
+                        numeric_series = pd.to_numeric(df[column], errors="coerce")
 
                     # Check if most non-null values could be converted successfully
                     valid_numeric_count = numeric_series.notna().sum()
@@ -507,11 +508,10 @@ class BigQueryWaveLoader:
 
                     # If we lost less than 10% of values, consider it numeric
                     if valid_numeric_count >= original_non_null_count * 0.99:
-                        # Check if all valid values are integers
+                        # Check if all valid values are integers (compare as float to avoid dtype mismatch)
                         valid_values = numeric_series.dropna()
-                        if len(valid_values) > 0 and valid_values.equals(
-                            valid_values.astype(int)
-                        ):
+                        is_integer = len(valid_values) > 0 and (valid_values == valid_values.astype("int64")).all()
+                        if is_integer:
                             # Integer column with proper null handling
                             clean_df[column] = numeric_series.astype("Int64")
                             schema.append(bigquery.SchemaField(column, "INTEGER"))
