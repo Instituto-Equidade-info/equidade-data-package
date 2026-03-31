@@ -431,16 +431,31 @@ class BigQueryWaveLoader:
         try:
             # Step 1: Make a copy and clean column names
             df = df.copy()
+            self.logger.info(f"[safe_load] Input shape: {df.shape}")
+            self.logger.info(f"[safe_load] Input dtypes:\n{df.dtypes.to_string()}")
+
+            # Log any Int64 columns that already have empty strings BEFORE cleaning
+            for col in df.columns:
+                if df[col].dtype.name in ("Int64", "int64", "Float64", "float64"):
+                    bad = df[col].apply(lambda x: x == "" or (isinstance(x, str) and not x.strip())).sum()
+                    if bad > 0:
+                        self.logger.warning(f"[safe_load] BEFORE clean — col '{col}' (dtype={df[col].dtype}) has {bad} empty string(s)")
+
             df = self._clean_column_names(df)
 
             # Step 2: Standardize null values
             df = df.replace(["", " ",'', "None", "null", "nan"], np.nan)
+            self.logger.info(f"[safe_load] Step 2 done — null standardization applied")
+
+            # Log object columns that still contain empty strings after replace
+            for col in df.select_dtypes(include="object").columns:
+                empty_count = (df[col] == "").sum()
+                if empty_count > 0:
+                    self.logger.warning(f"[safe_load] After replace — col '{col}' still has {empty_count} empty string(s)")
 
             # Step 3: Create a schema with better type detection
             schema = []
             clean_df = pd.DataFrame()
-
-            # Log columns with many NaN values to help debugging
 
             for column in df.columns:
                 # Check for special string columns first
@@ -449,6 +464,7 @@ class BigQueryWaveLoader:
                 ):
                     clean_df[column] = df[column].fillna("").astype(str)
                     schema.append(bigquery.SchemaField(column, "STRING"))
+                    self.logger.debug(f"[safe_load] '{column}' → STRING (special/ID)")
                     continue
 
                 # Check for date columns
@@ -456,6 +472,7 @@ class BigQueryWaveLoader:
                     try:
                         clean_df[column] = pd.to_datetime(df[column], errors="coerce")
                         schema.append(bigquery.SchemaField(column, "DATETIME"))
+                        self.logger.debug(f"[safe_load] '{column}' → DATETIME")
                         continue
                     except:
                         pass  # Try other type checks
@@ -463,10 +480,9 @@ class BigQueryWaveLoader:
                 # For remaining columns, check numeric conversion
                 non_null_values = df[column].dropna()
                 if len(non_null_values) == 0:
-                    # Empty column - default to STRING
                     clean_df[column] = df[column].fillna("").astype(str)
-
                     schema.append(bigquery.SchemaField(column, "STRING"))
+                    self.logger.debug(f"[safe_load] '{column}' → STRING (all null)")
                     continue
 
                 # Try aggressive numeric conversion
@@ -499,41 +515,67 @@ class BigQueryWaveLoader:
                             # Integer column with proper null handling
                             clean_df[column] = numeric_series.astype("Int64")
                             schema.append(bigquery.SchemaField(column, "INTEGER"))
+                            self.logger.debug(f"[safe_load] '{column}' → INTEGER (nulls={numeric_series.isna().sum()})")
                         else:
                             # Float column
                             clean_df[column] = numeric_series
                             schema.append(bigquery.SchemaField(column, "FLOAT"))
+                            self.logger.debug(f"[safe_load] '{column}' → FLOAT (nulls={numeric_series.isna().sum()})")
                     else:
                         # Too many non-numeric values - treat as string
+                        non_numeric_sample = df[column][pd.to_numeric(df[column].astype(str), errors="coerce").isna() & df[column].notna()].head(5).tolist()
+                        self.logger.warning(
+                            f"[safe_load] '{column}' → STRING (only {valid_numeric_count}/{original_non_null_count} numeric). "
+                            f"Non-numeric samples: {non_numeric_sample}"
+                        )
                         clean_df[column] = df[column].fillna("").astype(str)
                         schema.append(bigquery.SchemaField(column, "STRING"))
                 except Exception as e:
                     self.logger.warning(
-                        f"Failed to convert {column} to numeric: {str(e)}"
+                        f"[safe_load] Failed to convert '{column}' to numeric: {str(e)}"
                     )
                     clean_df[column] = df[column].fillna("").astype(str)
                     schema.append(bigquery.SchemaField(column, "STRING"))
 
+            self.logger.info(f"[safe_load] Step 3 done — schema inferred for {len(schema)} columns")
+
             # Step 4: Double-check numeric columns for any remaining issues
             for col, field in zip(clean_df.columns, schema):
                 if field.field_type in ["FLOAT", "INTEGER"]:
-                    # Convert to numeric, handling empty strings, string "nan"/"<NA>" and pd.NA
                     series = clean_df[col]
-                    # Replace string sentinels and actual pd.NA/np.nan uniformly
+
+                    # Audit: log any unexpected values before conversion
                     if series.dtype == object:
+                        bad_vals = series[series.notna() & ~pd.to_numeric(series, errors="coerce").notna()]
+                        if not bad_vals.empty:
+                            self.logger.warning(
+                                f"[safe_load] Step4 — '{col}' ({field.field_type}) has {len(bad_vals)} non-numeric object values: {bad_vals.head(5).tolist()}"
+                            )
                         series = series.replace(["", " ", "nan", "None", "null", "<NA>"], np.nan)
+
                     numeric_col = pd.to_numeric(series, errors="coerce")
+
+                    coerced_to_nan = numeric_col.isna().sum() - series.isna().sum() if series.dtype == object else 0
+                    if coerced_to_nan > 0:
+                        self.logger.warning(f"[safe_load] Step4 — '{col}' lost {coerced_to_nan} values coerced to NaN")
+
                     if field.field_type == "INTEGER":
                         clean_df[col] = numeric_col.astype("Int64")
+                        self.logger.debug(f"[safe_load] Step4 — '{col}' final dtype: {clean_df[col].dtype}, NA count: {clean_df[col].isna().sum()}")
                     else:
                         clean_df[col] = numeric_col
 
+            self.logger.info(f"[safe_load] Step 4 done — final dtype audit:")
+            integer_cols = [(col, field.field_type) for col, field in zip(clean_df.columns, schema) if field.field_type == "INTEGER"]
+            for col, ftype in integer_cols:
+                self.logger.info(f"[safe_load]   '{col}': dtype={clean_df[col].dtype}, NA={clean_df[col].isna().sum()}, sample={clean_df[col].dropna().head(3).tolist()}")
+
             # Step 5: Log information for debugging
-            self.logger.info(f"Prepared {len(clean_df.columns)} columns for BigQuery")
-            self.logger.info(f"Schema types: {[f.field_type for f in schema]}")
+            self.logger.info(f"[safe_load] Final schema: { {f.name: f.field_type for f in schema} }")
 
             # Step 6: Upload to BigQuery
             table_id = f"{self.project_id}.{dataset_id}.{table_name}"
+            self.logger.info(f"[safe_load] Uploading to {table_id} ...")
             job_config = bigquery.LoadJobConfig(
                 schema=schema,
                 write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
@@ -545,14 +587,28 @@ class BigQueryWaveLoader:
             job.result()
 
             self.logger.info(
-                f"Successfully loaded {table_name} to dataset {dataset_id}"
+                f"[safe_load] Successfully loaded {table_name} to dataset {dataset_id} ({len(clean_df)} rows)"
             )
             return True
 
         except Exception as e:
             self.logger.error(
-                f"Error loading {table_name} to dataset {dataset_id}: {str(e)}"
+                f"[safe_load] Error loading {table_name} to dataset {dataset_id}: {str(e)}"
             )
+            # Dump final state of all INTEGER/FLOAT columns for diagnosis
+            try:
+                self.logger.error("[safe_load] === DIAGNOSIS DUMP ===")
+                for col, field in zip(clean_df.columns, schema):
+                    if field.field_type in ("INTEGER", "FLOAT"):
+                        unique_types = set(type(v).__name__ for v in clean_df[col] if v is not None and not (isinstance(v, float) and pd.isna(v)))
+                        has_empty = any(v == "" for v in clean_df[col])
+                        self.logger.error(
+                            f"[safe_load]   '{col}' ({field.field_type}): dtype={clean_df[col].dtype}, "
+                            f"NA={clean_df[col].isna().sum()}, has_empty_str={has_empty}, "
+                            f"value_types={unique_types}, sample={clean_df[col].head(5).tolist()}"
+                        )
+            except Exception as debug_e:
+                self.logger.error(f"[safe_load] Error during diagnosis dump: {debug_e}")
             return False
 
     def process_wave(
