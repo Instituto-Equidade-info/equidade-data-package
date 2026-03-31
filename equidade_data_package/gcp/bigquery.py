@@ -109,6 +109,7 @@ class ColumnTypes:
         "id_aluno",
         "subjectId",
         "assessmentUid",
+        "id_agente",
         "id",
         "guest_grade",
     }
