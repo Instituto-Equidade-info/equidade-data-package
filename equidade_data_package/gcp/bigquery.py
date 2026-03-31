@@ -573,6 +573,22 @@ class BigQueryWaveLoader:
             # Step 5: Log information for debugging
             self.logger.info(f"[safe_load] Final schema: { {f.name: f.field_type for f in schema} }")
 
+            # Step 5b: Workaround for google-cloud-bigquery CSV serialization bug.
+            # When Int64 (nullable integer) columns are serialized to CSV internally,
+            # pd.NA becomes '' (empty string), which BigQuery rejects for INTEGER fields.
+            # Fix: convert Int64 columns that have nulls → float64 (NaN serializes as
+            # empty string too, but BigQuery accepts '' for FLOAT and also for INTEGER
+            # when loaded via parquet/Arrow). Columns without nulls → int64 (safe).
+            for col, field in zip(clean_df.columns, schema):
+                if field.field_type == "INTEGER" and str(clean_df[col].dtype) == "Int64":
+                    null_count = clean_df[col].isna().sum()
+                    if null_count > 0:
+                        clean_df[col] = clean_df[col].astype("float64")
+                        self.logger.info(f"[safe_load] '{col}': Int64→float64 ({null_count} nulls) to avoid pd.NA serialization issue")
+                    else:
+                        clean_df[col] = clean_df[col].astype("int64")
+                        self.logger.info(f"[safe_load] '{col}': Int64→int64 (no nulls)")
+
             # Step 6: Upload to BigQuery
             table_id = f"{self.project_id}.{dataset_id}.{table_name}"
             self.logger.info(f"[safe_load] Uploading to {table_id} ...")
@@ -600,12 +616,15 @@ class BigQueryWaveLoader:
                 self.logger.error("[safe_load] === DIAGNOSIS DUMP ===")
                 for col, field in zip(clean_df.columns, schema):
                     if field.field_type in ("INTEGER", "FLOAT"):
-                        unique_types = set(type(v).__name__ for v in clean_df[col] if v is not None and not (isinstance(v, float) and pd.isna(v)))
-                        has_empty = any(v == "" for v in clean_df[col])
+                        # Safe check for empty strings that handles pd.NA without boolean ambiguity
+                        if clean_df[col].dtype == object:
+                            has_empty = bool((clean_df[col] == "").any())
+                        else:
+                            has_empty = False
+                        sample = clean_df[col].head(5).tolist()
                         self.logger.error(
                             f"[safe_load]   '{col}' ({field.field_type}): dtype={clean_df[col].dtype}, "
-                            f"NA={clean_df[col].isna().sum()}, has_empty_str={has_empty}, "
-                            f"value_types={unique_types}, sample={clean_df[col].head(5).tolist()}"
+                            f"NA={clean_df[col].isna().sum()}, has_empty_str={has_empty}, sample={sample}"
                         )
             except Exception as debug_e:
                 self.logger.error(f"[safe_load] Error during diagnosis dump: {debug_e}")
