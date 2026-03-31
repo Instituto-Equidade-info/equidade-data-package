@@ -7,6 +7,7 @@ import numpy as np
 import hashlib
 import time
 import json
+import io
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from google.oauth2 import service_account
@@ -573,32 +574,26 @@ class BigQueryWaveLoader:
             # Step 5: Log information for debugging
             self.logger.info(f"[safe_load] Final schema: { {f.name: f.field_type for f in schema} }")
 
-            # Step 5b: Workaround for google-cloud-bigquery CSV serialization bug.
-            # When Int64 (nullable integer) columns are serialized to CSV internally,
-            # pd.NA becomes '' (empty string), which BigQuery rejects for INTEGER fields.
-            # Fix: convert Int64 columns that have nulls → float64 (NaN serializes as
-            # empty string too, but BigQuery accepts '' for FLOAT and also for INTEGER
-            # when loaded via parquet/Arrow). Columns without nulls → int64 (safe).
-            for col, field in zip(clean_df.columns, schema):
-                if field.field_type == "INTEGER" and str(clean_df[col].dtype) == "Int64":
-                    null_count = clean_df[col].isna().sum()
-                    if null_count > 0:
-                        clean_df[col] = clean_df[col].astype("float64")
-                        self.logger.info(f"[safe_load] '{col}': Int64→float64 ({null_count} nulls) to avoid pd.NA serialization issue")
-                    else:
-                        clean_df[col] = clean_df[col].astype("int64")
-                        self.logger.info(f"[safe_load] '{col}': Int64→int64 (no nulls)")
+            # Step 5b: Serialize to Parquet in memory.
+            # load_table_from_dataframe uses CSV/JSON internally in some library versions,
+            # causing pd.NA in Int64 columns to serialize as '' which BigQuery rejects for
+            # INTEGER fields. Parquet represents nulls via a bitmask — no '' issue at all.
+            self.logger.info(f"[safe_load] Serializing to parquet in memory...")
+            buf = io.BytesIO()
+            clean_df.to_parquet(buf, index=False, engine="pyarrow")
+            buf.seek(0)
+            self.logger.info(f"[safe_load] Parquet serialized ({buf.getbuffer().nbytes} bytes)")
 
-            # Step 6: Upload to BigQuery
+            # Step 6: Upload to BigQuery via parquet file
             table_id = f"{self.project_id}.{dataset_id}.{table_name}"
             self.logger.info(f"[safe_load] Uploading to {table_id} ...")
             job_config = bigquery.LoadJobConfig(
-                schema=schema,
+                source_format=bigquery.SourceFormat.PARQUET,
                 write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
             )
 
-            job = self.client.load_table_from_dataframe(
-                clean_df, table_id, job_config=job_config
+            job = self.client.load_table_from_file(
+                buf, table_id, job_config=job_config
             )
             job.result()
 
