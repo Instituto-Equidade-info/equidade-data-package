@@ -294,35 +294,37 @@ class EnvLoader:
         "twilio-functions" : [ "TWILIO_ACCOUNT_SID", "TWILIO_WHATSAPP_NUMBER", "CONTENT_SID", "CREDENTIALS",'TWILIO_AUTH_TOKEN' ],
 
     
-        "school-register" : [ GCP_PROJECT_ID,	
-                            GCP_REGION	,
-                            DOCUSIGN_TEMPLATE_SCHOOL_REGISTER	,
-                            DOCUSIGN_ACCOUNT_ID	,
-                            DOCUSIGN_API_BASE_URL	,
-                            DOCUSIGN_BASE_URL	,
-                            BIGQUERY_DATASET_SCHOOL_REGISTER	,
-                            SLACK_CHANNEL_SCHOOL_REGISTER_LOGS	,
-                            CREDENTIALS	,
-                            DOCUSIGN_ACCESS_TOKEN	,
-                            DOCUSIGN_INTEGRATION_KEY	,
-                            DOCUSIGN_USER_ID	,
-                            DOCUSIGN_CLIENT_SECRET],
+        "school-register" : [ "GCP_PROJECT_ID",
+                            "GCP_REGION",
+                            "DOCUSIGN_TEMPLATE_SCHOOL_REGISTER",
+                            "DOCUSIGN_ACCOUNT_ID",
+                            "DOCUSIGN_API_BASE_URL",
+                            "DOCUSIGN_BASE_URL",
+                            "BIGQUERY_DATASET_SCHOOL_REGISTER",
+                            "SLACK_CHANNEL_SCHOOL_REGISTER_LOGS",
+                            "CREDENTIALS",
+                            "DOCUSIGN_ACCESS_TOKEN",
+                            "DOCUSIGN_INTEGRATION_KEY",
+                            "DOCUSIGN_USER_ID",
+                            "DOCUSIGN_CLIENT_SECRET"],
 
-        "school-register-manager" : [ GCP_PROJECT_ID,	
-                            GCP_REGION	,
-                            DOCUSIGN_TEMPLATE_SCHOOL_REGISTER	,
-                            DOCUSIGN_ACCOUNT_ID	,
-                            DOCUSIGN_API_BASE_URL	,
-                            DOCUSIGN_BASE_URL	,
-                            BIGQUERY_DATASET_SCHOOL_REGISTER	,
-                            SLACK_CHANNEL_SCHOOL_REGISTER_LOGS	,
-                            CREDENTIALS	,
-                            DOCUSIGN_ACCESS_TOKEN	,
-                            DOCUSIGN_INTEGRATION_KEY	,
-                            DOCUSIGN_USER_ID	,
-                            DOCUSIGN_CLIENT_SECRET]
+        "school-register-manager" : [ "GCP_PROJECT_ID",
+                            "GCP_REGION",
+                            "DOCUSIGN_TEMPLATE_SCHOOL_REGISTER",
+                            "DOCUSIGN_ACCOUNT_ID",
+                            "DOCUSIGN_API_BASE_URL",
+                            "DOCUSIGN_BASE_URL",
+                            "BIGQUERY_DATASET_SCHOOL_REGISTER",
+                            "SLACK_CHANNEL_SCHOOL_REGISTER_LOGS",
+                            "CREDENTIALS",
+                            "DOCUSIGN_ACCESS_TOKEN",
+                            "DOCUSIGN_INTEGRATION_KEY",
+                            "DOCUSIGN_USER_ID",
+                            "DOCUSIGN_CLIENT_SECRET"]
 
     } 
+
+
     # Mapeamento de variáveis de ambiente para nomes de secrets no Secret Manager
     # Secrets com sufixos específicos por função para evitar conflitos
     SECRET_NAME_MAP = {
