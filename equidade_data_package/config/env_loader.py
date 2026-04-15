@@ -284,7 +284,7 @@ class EnvLoader:
                                 "CREDENTIALS",
                                 "SLACK_BOT_TOKEN",
                                 "SLACK_CHANNEL_FLUENCY",
-                                "FORM_ID",
+                                "FORM_ID","PAVLOVIA_GITLAB_TOKEN"
                             ],
 
 
@@ -350,7 +350,8 @@ class EnvLoader:
         "SLACK_BOT_TOKEN_equidade-download-data": "slack-bot-token-equidade-download-data",
         "SLACK_BOT_TOKEN_consistency_checker_function": "slack-bot-token-consistency-checker-function",
         "AUTHORIZATION_KEY_BLIP": "authorization-key-blip",
-        "AUTORIZATION_BLIP": "authorization-key-blip",  # Typo no nome original
+        "AUTORIZATION_BLIP": "authorization-key-blip",
+        "PAVLOVIA_GITLAB_TOKEN": "pavlovia-gitlab-token"  # Typo no nome original
     }
 
     def __init__(self, config: EnvConfig):
