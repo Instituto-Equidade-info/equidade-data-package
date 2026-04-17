@@ -45,7 +45,8 @@ LOG_EXECUTION_ID: true
 GCP_PROJECT_ID: equidade
 GCP_REGION: southamerica-east1
 GCP_WEBHOOK_URL: "https://southamerica-east1-equidade.cloudfunctions.net/docusign-webhook"
-
+SIGNING_PROXY_URL: "https://southamerica-east1-equidade.cloudfunctions.net/signing-proxy"
+DOCUSIGN_SIGNING_RETURN_URL: "https://southamerica-east1-equidade.cloudfunctions.net/signing-proxy?success=true"
 # === GMAIL ===
 GMAIL_IMPERSONATE_USER: "dados@equidade.info"
 

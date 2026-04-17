@@ -148,7 +148,7 @@ class EnvLoader:
             "SLACK_BOT_TOKEN_ACCESS",
             "SLACK_CHANNEL_ACCESS_LOGS",
             "STRAPI_BASE_URL",
-            "STRAPI_TOKEN",
+            "STRAPI_TOKEN",'DOCUSIGN_SIGNING_RETURN_URL','SIGNING_PROXY_URL'
         ],
         "access-revocation": [
             "BIGQUERY_DATASET_ACCESS",
@@ -306,7 +306,7 @@ class EnvLoader:
                             "DOCUSIGN_ACCESS_TOKEN",
                             "DOCUSIGN_INTEGRATION_KEY",
                             "DOCUSIGN_USER_ID",
-                            "DOCUSIGN_CLIENT_SECRET"],
+                            "DOCUSIGN_CLIENT_SECRET", 'DOCUSIGN_SIGNING_RETURN_URL','SIGNING_PROXY_URL'],
 
         "school-register-manager" : [ "GCP_PROJECT_ID",
                             "GCP_REGION",
@@ -320,7 +320,7 @@ class EnvLoader:
                             "DOCUSIGN_ACCESS_TOKEN",
                             "DOCUSIGN_INTEGRATION_KEY",
                             "DOCUSIGN_USER_ID",
-                            "DOCUSIGN_CLIENT_SECRET"]
+                            "DOCUSIGN_CLIENT_SECRET",'DOCUSIGN_SIGNING_RETURN_URL','SIGNING_PROXY_URL']
 
     } 
 
