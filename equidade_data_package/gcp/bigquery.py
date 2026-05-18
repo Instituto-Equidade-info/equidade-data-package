@@ -445,6 +445,19 @@ class BigQueryWaveLoader:
 
             df = self._clean_column_names(df)
 
+            # Step 1b: Flatten nullable integer types to float64.
+            # pd.DataFrame.replace() calls _validate_scalar on Int64 columns,
+            # which raises "Invalid value '' for dtype Int64" even when the column
+            # has no empty strings — just because '' is one of the replacement keys.
+            # Converting to float64 up-front sidesteps this entirely.
+            _nullable_int_types = {
+                "Int8", "Int16", "Int32", "Int64",
+                "UInt8", "UInt16", "UInt32", "UInt64",
+            }
+            for _col in df.columns:
+                if df[_col].dtype.name in _nullable_int_types:
+                    df[_col] = df[_col].astype("float64")
+
             # Step 2: Standardize null values
             df = df.replace(["", " ", '', "None", "null", "nan", "NA", "N/A", "<NA>"], np.nan)
             # Catch whitespace-only strings of any length ("  ", "\t", "\n", etc.)
@@ -516,21 +529,15 @@ class BigQueryWaveLoader:
                     valid_numeric_count = numeric_series.notna().sum()
                     original_non_null_count = df[column].notna().sum()
 
-                    # If we lost less than 10% of values, consider it numeric
+                    # If we lost less than 10% of values, consider it numeric.
+                    # Always store as float64 — avoids Int64 nullable-integer issues
+                    # (Int64.replace raises "Invalid value '' for dtype Int64").
+                    # NaN in float64 serialises as null in parquet, which BigQuery
+                    # reads correctly as NULL in a FLOAT64 column.
                     if valid_numeric_count >= original_non_null_count * 0.99:
-                        # Check if all valid values are integers (compare as float to avoid dtype mismatch)
-                        valid_values = numeric_series.dropna()
-                        is_integer = len(valid_values) > 0 and (valid_values == valid_values.astype("int64")).all()
-                        if is_integer:
-                            # Integer column with proper null handling
-                            clean_df[column] = numeric_series.astype("Int64")
-                            schema.append(bigquery.SchemaField(column, "INTEGER"))
-                            self.logger.debug(f"[safe_load] '{column}' → INTEGER (nulls={numeric_series.isna().sum()})")
-                        else:
-                            # Float column
-                            clean_df[column] = numeric_series
-                            schema.append(bigquery.SchemaField(column, "FLOAT"))
-                            self.logger.debug(f"[safe_load] '{column}' → FLOAT (nulls={numeric_series.isna().sum()})")
+                        clean_df[column] = numeric_series  # float64, NaN for nulls
+                        schema.append(bigquery.SchemaField(column, "FLOAT"))
+                        self.logger.debug(f"[safe_load] '{column}' → FLOAT (nulls={numeric_series.isna().sum()})")
                     else:
                         # Too many non-numeric values - treat as string
                         non_numeric_sample = df[column][pd.to_numeric(df[column].astype(str), errors="coerce").isna() & df[column].notna()].head(5).tolist()
@@ -549,36 +556,20 @@ class BigQueryWaveLoader:
 
             self.logger.info(f"[safe_load] Step 3 done — schema inferred for {len(schema)} columns")
 
-            # Step 4: Double-check numeric columns for any remaining issues
+            # Step 4: Final safety pass — ensure all FLOAT columns are pure float64.
             for col, field in zip(clean_df.columns, schema):
-                if field.field_type in ["FLOAT", "INTEGER"]:
+                if field.field_type == "FLOAT":
                     series = clean_df[col]
-
-                    # Audit: log any unexpected values before conversion
                     if series.dtype == object:
                         bad_vals = series[series.notna() & ~pd.to_numeric(series, errors="coerce").notna()]
                         if not bad_vals.empty:
                             self.logger.warning(
-                                f"[safe_load] Step4 — '{col}' ({field.field_type}) has {len(bad_vals)} non-numeric object values: {bad_vals.head(5).tolist()}"
+                                f"[safe_load] Step4 — '{col}' has {len(bad_vals)} non-numeric values: {bad_vals.head(5).tolist()}"
                             )
                         series = series.replace(["", " ", "nan", "None", "null", "<NA>"], np.nan)
+                    clean_df[col] = pd.to_numeric(series, errors="coerce")
 
-                    numeric_col = pd.to_numeric(series, errors="coerce")
-
-                    coerced_to_nan = numeric_col.isna().sum() - series.isna().sum() if series.dtype == object else 0
-                    if coerced_to_nan > 0:
-                        self.logger.warning(f"[safe_load] Step4 — '{col}' lost {coerced_to_nan} values coerced to NaN")
-
-                    if field.field_type == "INTEGER":
-                        clean_df[col] = numeric_col.astype("Int64")
-                        self.logger.debug(f"[safe_load] Step4 — '{col}' final dtype: {clean_df[col].dtype}, NA count: {clean_df[col].isna().sum()}")
-                    else:
-                        clean_df[col] = numeric_col
-
-            self.logger.info(f"[safe_load] Step 4 done — final dtype audit:")
-            integer_cols = [(col, field.field_type) for col, field in zip(clean_df.columns, schema) if field.field_type == "INTEGER"]
-            for col, ftype in integer_cols:
-                self.logger.info(f"[safe_load]   '{col}': dtype={clean_df[col].dtype}, NA={clean_df[col].isna().sum()}, sample={clean_df[col].dropna().head(3).tolist()}")
+            self.logger.info(f"[safe_load] Step 4 done — all numeric columns are float64")
 
             # Step 5: Log information for debugging
             self.logger.info(f"[safe_load] Final schema: { {f.name: f.field_type for f in schema} }")
