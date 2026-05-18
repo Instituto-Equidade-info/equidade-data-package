@@ -446,7 +446,15 @@ class BigQueryWaveLoader:
             df = self._clean_column_names(df)
 
             # Step 2: Standardize null values
-            df = df.replace(["", " ",'', "None", "null", "nan"], np.nan)
+            df = df.replace(["", " ", '', "None", "null", "nan", "NA", "N/A", "<NA>"], np.nan)
+            # Catch whitespace-only strings of any length ("  ", "\t", "\n", etc.)
+            df = df.apply(
+                lambda col: col.map(
+                    lambda x: np.nan if isinstance(x, str) and x.strip() == "" else x
+                )
+                if col.dtype == object
+                else col
+            )
             self.logger.info(f"[safe_load] Step 2 done — null standardization applied")
 
             # Log object columns that still contain empty strings after replace
