@@ -730,6 +730,17 @@ def load_env(
     config = EnvConfig(function_name=function_name, project_id=project_id, **kwargs)
     loader = EnvLoader(config)
 
+    # Log the package version once per cold start. Every function calls load_env, so this
+    # is the one place that can answer "which version is actually running in production?"
+    # without editing 13 repositories. WARNING level because Cloud Functions does not emit
+    # INFO by default — an invisible version banner solves nothing.
+    try:
+        from equidade_data_package import __version__ as _v
+
+        logging.warning("equidade-data-package %s loaded for function %r", _v, function_name)
+    except Exception:  # never let a diagnostic break a deploy
+        pass
+
     if auto_set:
         loader.set_environment()
 

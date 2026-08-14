@@ -15,7 +15,15 @@ Example usage:
     >>> from equidade_data_package.gcp.bigquery import BigQueryWaveLoader
 """
 
-__version__ = "0.2.6"
+try:
+    # Read from the installed distribution so this can never drift from pyproject.toml.
+    # A hardcoded literal here was reporting 0.2.6 while the package was at 0.3.x, which
+    # made "which version is actually deployed?" unanswerable from inside the function.
+    from importlib.metadata import version as _pkg_version
+
+    __version__ = _pkg_version("equidade-data-package")
+except Exception:  # not installed as a distribution (e.g. running from a source tree)
+    __version__ = "unknown"
 __author__ = "Equidade Team"
 
 # Import main classes for convenience
