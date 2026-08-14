@@ -32,30 +32,68 @@ This package now supports **automatic deployments** to all Cloud Functions when 
 
 ## Installation
 
-### From Private Git Repository
+### Install a specific version (recommended)
 
 ```bash
-# Using pip
-pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
+# uv (recommended)
+uv pip install "equidade-data-package @ git+https://github.com/Instituto-Equidade-info/equidade-data-package.git@v0.3.2"
 
-# Using uv (recommended)
-uv pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git
+# pip
+pip install "equidade-data-package @ git+https://github.com/Instituto-Equidade-info/equidade-data-package.git@v0.3.2"
+```
 
-# For development (editable mode)
+**Always pin a tag.** Installing from `@main` — or with no ref at all, which means the
+default branch — gives you an install whose URL is identical every time. pip caches by
+URL, so the next install can quietly reuse what it already has, and you end up running a
+version you did not expect with nothing to tell you so. This is the single most common
+source of "but I updated it" confusion in this project, in CI and on laptops alike.
+
+### Check which version you actually have
+
+```bash
+python -c "import equidade_data_package as p; print(p.__version__)"
+```
+
+Since 0.3.2 this reads from the installed distribution metadata, so it cannot disagree
+with what is installed. Earlier versions hardcoded the number and were wrong.
+
+Deployed functions report it too, once per cold start:
+
+```
+WARNING:root:equidade-data-package 0.3.2 loaded for function 'stf-etl-qualtrics'
+```
+
+### If you do track `main`
+
+```bash
+uv pip install --no-cache --reinstall \
+  "equidade-data-package @ git+https://github.com/Instituto-Equidade-info/equidade-data-package.git@main"
+```
+
+`--no-cache` and `--reinstall` are both needed: the first stops pip reusing a cached
+build, the second stops it deciding the requirement is already satisfied.
+
+### Developing the package itself
+
+```bash
 git clone https://github.com/Instituto-Equidade-info/equidade-data-package.git
 cd equidade-data-package
 uv pip install -e .
 ```
 
-### With Specific Branch or Tag
+An editable install always reflects your working tree, so no cache is involved.
+
+### Upgrading
 
 ```bash
-# Install from a specific branch
-uv pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git@branch-name
-
-# Install from a specific tag/version
-uv pip install git+https://github.com/Instituto-Equidade-info/equidade-data-package.git@v0.1.0
+uv pip install --reinstall \
+  "equidade-data-package @ git+https://github.com/Instituto-Equidade-info/equidade-data-package.git@v0.3.2"
+python -c "import equidade_data_package as p; print(p.__version__)"   # confirm
 ```
+
+Releases: https://github.com/Instituto-Equidade-info/equidade-data-package/releases
+
+For CI and Cloud Functions, see [DEPLOY_PINNING.md](DEPLOY_PINNING.md).
 
 ## Usage
 
