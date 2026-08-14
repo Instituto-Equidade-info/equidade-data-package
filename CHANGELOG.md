@@ -1,5 +1,44 @@
 # Changelog - equidade-data-package
 
+## [0.3.1] - 2026-08-14
+
+### 🔒 Removed cross-pipeline secret fallbacks
+
+`SECRET_NAME_MAP` registered two **per-function** secrets as **shared defaults**:
+
+```python
+"CREDENTIALS": "credentials-pi-raw-data-function",
+"SLACK_BOT_TOKEN": "slack-bot-token-consistency-checker-function",
+```
+
+Any function without its own suffixed entry silently received another pipeline's
+credentials. This was observed in production: after `stf-etl-qualtrics` had its
+`CREDENTIALS` environment variable removed, `EnvLoader` resolved the variable from Secret
+Manager and handed it `credentials-pi-raw-data-function` — which holds a
+`bigquery-loader@` service account key. Nothing failed, so nothing was noticed.
+
+Both shared entries are removed. Functions that legitimately need these secrets keep
+their explicit `<VAR>_<function-name>` entries and are unaffected:
+
+| Function | Still resolves |
+|---|---|
+| `pi_raw_data_function` | `credentials-pi-raw-data-function` |
+| `equidade-download-data` | `credentials-equidade-download-data` |
+| `consistency_checker_function` | `slack-bot-token-consistency-checker-function` |
+
+Functions without an entry now resolve to `credentials` / `slack-bot-token`, which do not
+exist, so the variable comes back missing and the function fails with a clear error.
+**That is intended**: borrowing another pipeline's credentials is worse than not starting.
+
+Genuinely shared secrets (`aws-access-key-id`, `surveycto-password`, …) are unchanged.
+
+Unmapped sensitive variables now log a warning naming the entry that should be added.
+
+### 🐛 Fixed
+
+`logging` was never imported in `env_loader.py`.
+
+
 ## [0.3.0] - 2026-08-14
 
 ### ✨ Application Default Credentials support
