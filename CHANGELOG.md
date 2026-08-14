@@ -1,5 +1,27 @@
 # Changelog - equidade-data-package
 
+## [0.3.2] - 2026-08-14
+
+### 🐛 Restores the SLACK_BOT_TOKEN shared mapping
+
+0.3.1 removed both cross-pipeline secret fallbacks at once. Removing the `SLACK_BOT_TOKEN`
+one broke Slack notifications for `stf-etl-qualtrics` and `stf-treatment-function`, which
+had been relying on it — the ETLs kept loading data, but every run failed to notify with
+`{'ok': False, 'error': 'not_authed'}`.
+
+The two fallbacks are not equivalent, and treating them as one change was the mistake:
+
+| | Severity |
+|---|---|
+| Shared **service account key** with `bigquery.admin`, `storage.admin`, `secretmanager.admin` | Security incident — stays removed |
+| Shared **Slack bot token** | Untidy — restored while each function gets its own secret |
+
+`CREDENTIALS` remains unmapped, so the 0.3.1 fix stands.
+
+**Follow-up:** create `slack-bot-token-<function>` secrets for the functions that need
+them, then remove this mapping too.
+
+
 ## [0.3.1] - 2026-08-14
 
 ### 🔒 Removed cross-pipeline secret fallbacks

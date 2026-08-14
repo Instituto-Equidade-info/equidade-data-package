@@ -343,12 +343,19 @@ class EnvLoader:
         "AWS_SECRET_ACCESS_KEY": "aws-secret-access-key",
         "SURVEYCTO_PASSWORD": "surveycto-password",
         "TOKEN_GITHUB": "token-github",
-        # NOTE: "CREDENTIALS" and "SLACK_BOT_TOKEN" deliberately have NO shared entry.
-        # They used to map to credentials-pi-raw-data-function and
-        # slack-bot-token-consistency-checker-function respectively — secrets belonging to
-        # one specific function, registered as the default for every function. Any function
-        # without its own suffixed entry silently received another pipeline's credentials.
-        # A function that needs these must declare its own "<VAR>_<function-name>" entry.
+        # "CREDENTIALS" deliberately has NO shared entry. It used to map to
+        # credentials-pi-raw-data-function — one function's service account key,
+        # registered as the default for every function — so any function without its own
+        # suffixed entry silently authenticated as bigquery-loader@ using a key we are
+        # trying to retire. A function needing it must declare "CREDENTIALS_<function>".
+        #
+        # SLACK_BOT_TOKEN keeps its shared entry, for now. Removing it broke Slack
+        # notifications for stf-etl-qualtrics and stf-treatment-function, which had been
+        # relying on this fallback. The two cases are not equivalent: a shared bot token
+        # is untidy, a shared service account key with admin roles is a security incident.
+        # TODO: give each function its own slack-bot-token-<function> secret, then remove
+        # this line too.
+        "SLACK_BOT_TOKEN": "slack-bot-token-consistency-checker-function",
         # Secrets específicos por função (com sufixo)
         "CREDENTIALS_equidade-download-data": "credentials-equidade-download-data",
         "CREDENTIALS_pi_raw_data_function": "credentials-pi-raw-data-function",
