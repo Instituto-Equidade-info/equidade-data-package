@@ -28,9 +28,9 @@ def load_treated_data(
         max_files: Número máximo de arquivos para carregar (None = todos)
     """
     agente_formatted = agente.lower()
-
+    
     # Construct S3 path pattern
-    s3_base_path = "landing-zone-iu-prod/saida/equidade.info/saida/transform/equidade.info/tratados"
+    s3_base_path = "service-zone-iu-prod-135655205417-us-east-1-an/saida/equidade.info/tratados"
     s3_agent_path = f"{s3_base_path}/{agente_formatted}/"
 
     # Create S3 filesystem

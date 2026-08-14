@@ -15,7 +15,7 @@ Example usage:
     >>> from equidade_data_package.gcp.bigquery import BigQueryWaveLoader
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.6"
 __author__ = "Equidade Team"
 
 # Import main classes for convenience
