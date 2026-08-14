@@ -1,17 +1,25 @@
 name: Trigger Deploys on Package Update
 
 on:
+  # Only `release: published`. Publishing a release also creates the tag, so keeping a
+  # `push: tags` trigger too made every release dispatch TWICE — each function received
+  # two concurrent `gcloud functions deploy` calls and the second failed with
+  # "An operation on function X is already in progress", generating a wave of failure
+  # emails for deploys that had actually succeeded.
   release:
     types: [published]
-  push:
-    tags:
-      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       version:
         description: 'Package version to deploy'
         required: false
         default: 'latest'
+
+# A second safety net: if two cascades ever overlap (a re-run, or a release published
+# while another is still fanning out), queue them instead of racing.
+concurrency:
+  group: release-cascade
+  cancel-in-progress: false
 
 jobs:
   trigger-dependent-repos:
