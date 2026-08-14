@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Union
 from googleapiclient.discovery import build
 
-from .credentials import resolve_credentials
+from .credentials import resolve_drive_credentials
 from googleapiclient.http import MediaIoBaseDownload
 
 
@@ -24,9 +24,12 @@ class DriveService:
                 Default Credentials.
 
         Note:
-            Under ADC the identity becomes the runtime service account, so any Drive
-            folder the code reads must be shared with that account's email. Otherwise
-            files simply appear to not exist.
+            Without explicit credentials, Drive access goes through a dedicated service
+            account that the runtime impersonates — plain ADC cannot be used here because
+            the metadata server issues cloud-platform tokens and the Drive API rejects
+            that scope. Any file read must be shared with that account's email; Drive
+            reports a scope or sharing failure as "file not found", not as a permission
+            error, so check sharing first when a file appears to be missing.
         """
         self.SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
         self.credentials_dict = credentials_dict
@@ -42,7 +45,7 @@ class DriveService:
         if not self._service:
             try:
                 logging.info("Iniciando criação do serviço Drive...")
-                credentials, _ = resolve_credentials(
+                credentials, _ = resolve_drive_credentials(
                     self.credentials_dict, scopes=self.SCOPES
                 )
                 self._service = build("drive", "v3", credentials=credentials)
