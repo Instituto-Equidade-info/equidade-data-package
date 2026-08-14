@@ -4,20 +4,23 @@ import pandas as pd
 import io
 import logging
 from typing import Dict, List, Optional, Union, Any
-from google.oauth2 import service_account
 from google.cloud import storage
+
+from .credentials import resolve_credentials
 from pathlib import Path
 
 
 class StorageService:
     """Service for managing Google Cloud Storage client connections."""
 
-    def __init__(self, credentials_dict: Dict):
+    def __init__(self, credentials_dict: Optional[Dict] = None):
         """
         Initialize the Storage Service.
 
         Args:
-            credentials_dict: GCP service account credentials as dictionary
+            credentials_dict: GCP service account credentials as dictionary. Optional —
+                when omitted, falls back to $GCP_CREDENTIALS and then to Application
+                Default Credentials.
         """
         self.credentials_dict = credentials_dict
         self._client = None
@@ -32,10 +35,8 @@ class StorageService:
         if not self._client:
             try:
                 logging.info("Iniciando criação do cliente Storage...")
-                credentials = service_account.Credentials.from_service_account_info(
-                    self.credentials_dict
-                )
-                self._client = storage.Client(credentials=credentials)
+                credentials, project = resolve_credentials(self.credentials_dict)
+                self._client = storage.Client(credentials=credentials, project=project)
                 logging.info("Cliente Storage construído com sucesso")
             except Exception as e:
                 logging.error(f"Erro ao criar cliente Storage: {str(e)}")

@@ -5,20 +5,28 @@ import io
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Union
-from google.oauth2 import service_account
 from googleapiclient.discovery import build
+
+from .credentials import resolve_credentials
 from googleapiclient.http import MediaIoBaseDownload
 
 
 class DriveService:
     """Service for managing Google Drive API connections."""
 
-    def __init__(self, credentials_dict: Dict):
+    def __init__(self, credentials_dict: Optional[Dict] = None):
         """
         Initialize the Drive Service.
 
         Args:
-            credentials_dict: GCP service account credentials as dictionary
+            credentials_dict: GCP service account credentials as dictionary. Optional —
+                when omitted, falls back to $GCP_CREDENTIALS and then to Application
+                Default Credentials.
+
+        Note:
+            Under ADC the identity becomes the runtime service account, so any Drive
+            folder the code reads must be shared with that account's email. Otherwise
+            files simply appear to not exist.
         """
         self.SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
         self.credentials_dict = credentials_dict
@@ -34,7 +42,7 @@ class DriveService:
         if not self._service:
             try:
                 logging.info("Iniciando criação do serviço Drive...")
-                credentials = service_account.Credentials.from_service_account_info(
+                credentials, _ = resolve_credentials(
                     self.credentials_dict, scopes=self.SCOPES
                 )
                 self._service = build("drive", "v3", credentials=credentials)

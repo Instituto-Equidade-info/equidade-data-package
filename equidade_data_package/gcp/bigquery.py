@@ -10,8 +10,9 @@ import json
 import io
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
-from google.oauth2 import service_account
 from google.cloud import bigquery
+
+from .credentials import resolve_credentials
 
 
 # Global cache for query results
@@ -29,8 +30,9 @@ def query_bigquery(
 
     Args:
         sql_query: The SQL query to execute
-        credentials_json: GCP credentials as dictionary. If None, loads from GCP_CREDENTIALS
-                         environment variable
+        credentials_json: GCP credentials as dictionary. Optional — when omitted, falls
+                         back to $GCP_CREDENTIALS and then to Application Default
+                         Credentials (the identity the code already runs as)
 
     Returns:
         pd.DataFrame: Query results as a DataFrame
@@ -56,19 +58,12 @@ def query_bigquery(
     start_time = time.time()
 
     try:
-        # If credentials_json is None, load from environment
-        if credentials_json is None:
-            credentials_json = json.loads(os.getenv("GCP_CREDENTIALS"))
+        # Explicit credentials, else $GCP_CREDENTIALS, else the runtime's own identity.
+        credentials, project = resolve_credentials(credentials_json)
 
-        # Create credentials
-        credentials = service_account.Credentials.from_service_account_info(
-            credentials_json, scopes=["https://www.googleapis.com/auth/cloud-platform"]
-        )
-
-        # Create client
-        client = bigquery.Client(
-            credentials=credentials, project=credentials.project_id
-        )
+        # Create client. `project` may be None under ADC in environments that do not
+        # advertise one; the client then resolves it itself.
+        client = bigquery.Client(credentials=credentials, project=project)
 
         # Configure job (without timeout_ms)
         job_config = bigquery.QueryJobConfig(
@@ -139,21 +134,23 @@ class ColumnTypes:
 class BigQueryWaveLoader:
     """Loads educational wave data into BigQuery with proper type inference and handling."""
 
-    def __init__(self, project_id: str, credentials_json: Dict):
+    def __init__(self, project_id: str, credentials_json: Optional[Dict] = None):
         """
-        Initialize the BigQuery loader with project credentials.
+        Initialize the BigQuery loader.
 
         Args:
             project_id: The GCP project ID
-            credentials_json: Service account credentials as dictionary
+            credentials_json: Service account credentials as dictionary. Optional —
+                when omitted, falls back to $GCP_CREDENTIALS and then to Application
+                Default Credentials.
         """
-        self.credentials = service_account.Credentials.from_service_account_info(
-            credentials_json, scopes=["https://www.googleapis.com/auth/cloud-platform"]
-        )
+        self.credentials, resolved_project = resolve_credentials(credentials_json)
+        # Prefer the caller's project_id: under ADC the resolved project is the one the
+        # runtime lives in, which is not necessarily the one being written to.
         self.client = bigquery.Client(
-            credentials=self.credentials, project=self.credentials.project_id
+            credentials=self.credentials, project=project_id or resolved_project
         )
-        self.project_id = project_id
+        self.project_id = project_id or resolved_project
         self.column_types = ColumnTypes()
         self._setup_logging()
 
