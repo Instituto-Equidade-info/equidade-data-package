@@ -26,9 +26,19 @@ jobs:
           - 'gf_raw_data_function'
           - 'iu-dataset-update-function'
           - 'consistency_checker_function'
-          - 'pi_treatment_data_function'
+          # - 'pi_treatment_data_function'
+          #   Commented out deliberately, not forgotten. The Cloud Function was deleted
+          #   when its wave ended and there is no new wave yet. Dispatching a deploy
+          #   here would recreate a resource that was removed on purpose. Uncomment when
+          #   the next PI wave starts.
           - 'pi_raw_data_function'
           - 'etl-surveycto-function'
+          # STF functions. They have always listened for package-updated; they were
+          # simply never added here, so three months of package releases never reached
+          # them. Found by cross-referencing the functions carrying a CREDENTIALS env
+          # var against this matrix.
+          - 'stf-etl-qualtrics'
+          - 'stf_treatment_function'
           - 'dataset-update-function'
           - 'equidade-data-package'
           - equidade-access-cloud-functions
@@ -38,7 +48,10 @@ jobs:
 
     env:
       # Set your GitHub organization name here
-      GITHUB_ORG: 'Instituto-Equidade-info'  # CHANGE THIS
+      # Derived from the repository this workflow runs in, so an org rename cannot
+      # silently break the cascade again — which is what happened when
+      # equidade-info became Instituto-Equidade-info.
+      GITHUB_ORG: ${{ github.repository_owner }}
 
     steps:
       - name: Get package version
