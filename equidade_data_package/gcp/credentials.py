@@ -86,11 +86,14 @@ def resolve_credentials(
                 break
 
     if info is not None:
-        logging.info(
-            "Authenticating with a service account key from %s. Prefer Application "
-            "Default Credentials: remove the environment variable to use the runtime's "
-            "own identity.",
-            source,
+        # WARNING, not INFO, for two reasons: Cloud Functions does not emit INFO by
+        # default, so an INFO line here is invisible exactly where it matters; and using
+        # a long-lived key is the condition we are trying to eliminate, so it should be
+        # noisy until it stops happening.
+        logging.warning(
+            "Authenticating with a SERVICE ACCOUNT KEY from %s. This is the legacy path: "
+            "remove the credentials from %s so the runtime's own identity (ADC) is used.",
+            source, source,
         )
         creds = service_account.Credentials.from_service_account_info(
             info, scopes=scope_list
@@ -98,5 +101,8 @@ def resolve_credentials(
         return creds, creds.project_id
 
     creds, project = google.auth.default(scopes=scope_list)
-    logging.info("Authenticating with Application Default Credentials (project=%s).", project)
+    # Also WARNING-level while the migration is in progress: it is the only way to
+    # confirm from Cloud Logging that a function actually stopped using the key.
+    # Downgrade to INFO once every function has migrated.
+    logging.warning("Authenticating with Application Default Credentials (project=%s).", project)
     return creds, project
