@@ -24,6 +24,7 @@ Usage:
 """
 
 import json
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -342,8 +343,12 @@ class EnvLoader:
         "AWS_SECRET_ACCESS_KEY": "aws-secret-access-key",
         "SURVEYCTO_PASSWORD": "surveycto-password",
         "TOKEN_GITHUB": "token-github",
-        "CREDENTIALS": "credentials-pi-raw-data-function",
-        "SLACK_BOT_TOKEN" : "slack-bot-token-consistency-checker-function",
+        # NOTE: "CREDENTIALS" and "SLACK_BOT_TOKEN" deliberately have NO shared entry.
+        # They used to map to credentials-pi-raw-data-function and
+        # slack-bot-token-consistency-checker-function respectively — secrets belonging to
+        # one specific function, registered as the default for every function. Any function
+        # without its own suffixed entry silently received another pipeline's credentials.
+        # A function that needs these must declare its own "<VAR>_<function-name>" entry.
         # Secrets específicos por função (com sufixo)
         "CREDENTIALS_equidade-download-data": "credentials-equidade-download-data",
         "CREDENTIALS_pi_raw_data_function": "credentials-pi-raw-data-function",
@@ -500,12 +505,25 @@ class EnvLoader:
         if key_with_suffix in self.SECRET_NAME_MAP:
             return self.SECRET_NAME_MAP[key_with_suffix]
 
-        # Tentar sem sufixo (secret compartilhado)
+        # Tentar sem sufixo (secret compartilhado).
+        # Only genuinely shared secrets belong here — ones every function is meant to
+        # use, like aws-access-key-id. A per-function secret registered as a shared
+        # default hands one pipeline's credentials to every other pipeline.
         if var_name in self.SECRET_NAME_MAP:
             return self.SECRET_NAME_MAP[var_name]
 
-        # Fallback: converter para kebab-case
-        return var_name.lower().replace("_", "-")
+        # Unmapped. Fall back to kebab-case, which usually resolves to a secret that does
+        # not exist — the variable then comes back missing and the function fails with a
+        # clear error. That is the intended outcome: borrowing another function's
+        # credentials is worse than not starting.
+        guess = var_name.lower().replace("_", "-")
+        logging.warning(
+            "No secret mapping for %r in function %r; trying %r. If this is a credential, "
+            "add an explicit '%s_%s' entry to SECRET_NAME_MAP rather than relying on this "
+            "guess.",
+            var_name, self.config.function_name, guess, var_name, self.config.function_name,
+        )
+        return guess
 
     def _fetch_secret(self, secret_name: str) -> Optional[str]:
         """
