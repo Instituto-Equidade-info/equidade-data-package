@@ -1,5 +1,26 @@
 # Changelog - equidade-data-package
 
+## [0.4.1] - 2026-08-14
+
+### 🔒 Removed the last two paths back to the leaked key
+
+`SECRET_NAME_MAP` still mapped `CREDENTIALS_pi_raw_data_function` and
+`CREDENTIALS_equidade-download-data` to Secret Manager entries that hold a
+`bigquery-loader@` service account key.
+
+Because of that, removing the `CREDENTIALS` environment variable from either function did
+not switch it to ADC — `EnvLoader` fetched the same key from Secret Manager instead, and
+`load_env(auto_set=True)` wrote it back into `os.environ`, where the credential resolver
+picked it up ahead of ADC. The function kept working. This is the third time in this
+migration that "still works" and "migrated" produced identical signals.
+
+`CREDENTIALS` is also removed from both functions' `FUNCTION_ENV_MAP` entries, so
+`validate()` stops reporting it as missing.
+
+Genuinely shared secrets (`aws-access-key-id`, `surveycto-password`, …) are untouched.
+
+**Note:** the secrets themselves still exist and still hold the key. They are destroyed as
+part of the rotation, once logs confirm nothing reads them.
 ## [0.4.0] - 2026-08-14
 
 ### ✨ Google Drive without a service account key

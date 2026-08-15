@@ -63,7 +63,6 @@ class EnvLoader:
     # Baseado na análise das variáveis usadas em cada função
     FUNCTION_ENV_MAP = {
         "equidade-download-data": [
-            "CREDENTIALS",
             "LOG_EXECUTION_ID",
             "SLACK_BOT_TOKEN",
         ],
@@ -268,7 +267,6 @@ class EnvLoader:
         ],
         "pi_raw_data_function": [
             "AUTHORIZATION_KEY_BLIP",
-            "CREDENTIALS",
             "SLACK_BOT_TOKEN",
             "SURVEYCTO_PASSWORD",
             "SURVEYCTO_SERVER",
@@ -356,9 +354,13 @@ class EnvLoader:
         # TODO: give each function its own slack-bot-token-<function> secret, then remove
         # this line too.
         "SLACK_BOT_TOKEN": "slack-bot-token-consistency-checker-function",
-        # Secrets específicos por função (com sufixo)
-        "CREDENTIALS_equidade-download-data": "credentials-equidade-download-data",
-        "CREDENTIALS_pi_raw_data_function": "credentials-pi-raw-data-function",
+        # Secrets específicos por função (com sufixo).
+        #
+        # The CREDENTIALS_* entries were removed: they pointed at secrets holding a
+        # bigquery-loader@ service account key, so a function that lost its CREDENTIALS
+        # environment variable silently fetched the same key from Secret Manager instead
+        # of falling back to ADC. The function kept working, which is why it went
+        # unnoticed. Functions now authenticate as their own runtime identity.
         "SLACK_BOT_TOKEN_equidade-download-data": "slack-bot-token-equidade-download-data",
         "SLACK_BOT_TOKEN_consistency_checker_function": "slack-bot-token-consistency-checker-function",
         "AUTHORIZATION_KEY_BLIP": "authorization-key-blip",
