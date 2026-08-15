@@ -21,6 +21,34 @@ Genuinely shared secrets (`aws-access-key-id`, `surveycto-password`, …) are un
 
 **Note:** the secrets themselves still exist and still hold the key. They are destroyed as
 part of the rotation, once logs confirm nothing reads them.
+## [0.4.0] - 2026-08-14
+
+### ✨ Google Drive without a service account key
+
+`DriveService` no longer needs a JSON key. It impersonates a dedicated Drive service
+account instead.
+
+**Why plain ADC does not work for Drive.** On Cloud Functions the ADC token comes from the
+metadata server, which issues `cloud-platform` tokens. The Drive API does not accept that
+scope, and asking `google.auth.default()` for `drive.readonly` does not help — the metadata
+server will not widen a token beyond what the runtime was granted. A service account *key*
+can request any scope, which is why the old code worked and is exactly the dependency being
+removed.
+
+Impersonation resolves it: the runtime mints a short-lived token for
+`drive-reader@equidade.iam.gserviceaccount.com` with the Drive scope attached, and no key
+exists anywhere.
+
+That account **holds no project IAM roles**. If its token leaks it can read the
+spreadsheets it has been shared, not the project. Override with `$DRIVE_SA`.
+
+**Requires:** the runtime service account needs `roles/iam.serviceAccountTokenCreator` on
+the Drive account — granted on that resource, not project-wide.
+
+Verified end to end against the live project: `DriveService()` with no credentials reads
+`dic_interno_wave_2` and `dicionario_eq6_gf3.xlsx`.
+
+Passing credentials explicitly still works unchanged.
 
 
 ## [0.3.2] - 2026-08-14
