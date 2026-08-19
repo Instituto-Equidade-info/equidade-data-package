@@ -1,5 +1,58 @@
 # Changelog - equidade-data-package
 
+## [0.5.0] - 2026-08-19
+
+### 🐛 school-register-processor had no entry, and nobody could tell
+
+`school-register-processor` was missing from `FUNCTION_ENV_MAP` entirely. It worked
+anyway, because `shared/school_register_logger.py` in
+`equidade-access-cloud-functions` called `load_env("school-register")` at import
+time and every function importing it inherited that set.
+
+When that import-time call was removed (equidade-access-cloud-functions#7), the
+function began failing on its next invocation with
+
+```
+❌ Dados inválidos: DOCUSIGN_TEMPLATE_SCHOOL_REGISTER não configurado
+```
+
+and returning `status: 'ok'`, so Pub/Sub acked and dropped every school
+registration until it was found.
+
+`docusign-webhook` had the same defect on a narrower path: its own entry omitted
+`BIGQUERY_DATASET_SCHOOL_REGISTER`, which it needs through the `SchoolRegisterLogger`
+it imports lazily.
+
+### Changed
+
+- **`SCHOOL_REGISTER_VARS`**, a single module-level list, now backs the
+  `school-register`, `school-register-processor` and `school-register-manager`
+  entries. They were two hand-copied lists, which is precisely how the deployed
+  function's own name came to be absent from both. `school-register` is retained
+  because it is not a deployed function name but is the one that module passed.
+- **`BIGQUERY_DATASET_SCHOOL_REGISTER`** added to `docusign-webhook`.
+
+### Removed — variables that never resolved
+
+Each produced a Secret Manager 404 and a warning on every cold start, for a value
+nothing could use:
+
+- **`CREDENTIALS`** from 11 entries. It maps to no secret *on purpose*, so functions
+  fall through to Application Default Credentials. Listing it only made the fallback
+  noisy, and that noise can mask a real secret failure.
+- **`DOCUSIGN_ACCESS_TOKEN`** — the token is obtained at runtime by
+  `DocuSignOAuthClient`, which reads `docusign-refresh-token` from Secret Manager
+  directly. Listed, it resolved by kebab-case guess to `docusign-access-token`, which
+  does not exist; the real secret is `docusign-access-token-data` and nothing reads it
+  from the environment.
+- **`DOCUSIGN_USER_ID`** — referenced by no runtime code in any function repository.
+
+### Upgrade note
+
+`equidade-access-cloud-functions` carries a `CONFIG_FALLBACKS` workaround in
+`shared/env.py` covering these two functions. Once this release is deployed there,
+that workaround should be deleted — it exists only because the map was wrong.
+
 ## [0.4.1] - 2026-08-14
 
 ### 🔒 Removed the last two paths back to the leaked key

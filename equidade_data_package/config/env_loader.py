@@ -33,6 +33,42 @@ from typing import Any, Dict, Optional
 import yaml
 
 
+# Configuration shared by every function in the school-register flow. Defined once and
+# referenced from FUNCTION_ENV_MAP, so adding a function to that flow cannot silently omit a
+# variable — which is what happened to school-register-processor while these were two
+# hand-copied lists.
+#
+# These variables live in env-files/env-shared.yaml inside this package, not in any
+# repository's env-shared.yaml, so they are never deployed environment variables and cannot be
+# found by inspecting a deployed function. EnvLoader._load_from_yaml is what resolves them, and
+# only for the names listed here.
+SCHOOL_REGISTER_VARS = [
+    "GCP_PROJECT_ID",
+    "GCP_REGION",
+    "DOCUSIGN_TEMPLATE_SCHOOL_REGISTER",
+    "DOCUSIGN_ACCOUNT_ID",
+    "DOCUSIGN_API_BASE_URL",
+    "DOCUSIGN_BASE_URL",
+    "DOCUSIGN_CLIENT_SECRET",
+    "DOCUSIGN_INTEGRATION_KEY",
+    "DOCUSIGN_SIGNING_RETURN_URL",
+    "SIGNING_PROXY_URL",
+    "BIGQUERY_DATASET_SCHOOL_REGISTER",
+    "SLACK_CHANNEL_SCHOOL_REGISTER_LOGS",
+    # Deliberately absent, and do not add them back:
+    #
+    #   CREDENTIALS           maps to no secret on purpose, so the function falls through to
+    #                         Application Default Credentials. Listing it only produces a 404
+    #                         fetch and a warning on every cold start.
+    #   DOCUSIGN_ACCESS_TOKEN the access token is obtained at runtime by DocuSignOAuthClient,
+    #                         which reads docusign-refresh-token from Secret Manager directly.
+    #                         Listed here it resolved by kebab-case guess to
+    #                         "docusign-access-token", which does not exist — the real secret is
+    #                         docusign-access-token-data, and nothing reads it from the env.
+    #   DOCUSIGN_USER_ID      referenced by no runtime code in any function repository.
+]
+
+
 @dataclass
 class EnvConfig:
     """Configuration for environment loader."""
@@ -96,7 +132,6 @@ class EnvLoader:
             "AWS_ACCESS_KEY_ID",
             "AWS_REGION",
             "AWS_SECRET_ACCESS_KEY",
-            "CREDENTIALS",
             "SURVEYCTO_PASSWORD",
             "SURVEYCTO_SERVER",
             "SURVEYCTO_USERNAME",
@@ -105,7 +140,6 @@ class EnvLoader:
             "AWS_ACCESS_KEY_ID",
             "AWS_REGION",
             "AWS_SECRET_ACCESS_KEY",
-            "CREDENTIALS",
             "DATA_PROCESSING_TOPIC",
             "GCP_PROJECT",
             "SLACK_BOT_TOKEN",
@@ -114,14 +148,12 @@ class EnvLoader:
         "iu-process-dataset-updates": [
             "AWS_ACCESS_KEY_ID",
             "AWS_SECRET_ACCESS_KEY",
-            "CREDENTIALS",
             "SLACK_BOT_TOKEN",
         ],
         "consistency_checker_function": [
             "AUTORIZATION_BLIP",
             "AWS_ACCESS_KEY_ID",
             "AWS_SECRET_ACCESS_KEY",
-            "CREDENTIALS",
             "SLACK_BOT_TOKEN",
         ],
         "access-manager": [
@@ -192,18 +224,15 @@ class EnvLoader:
         ],
         "gf_raw_data_function": [
             "AUTHORIZATION_KEY_BLIP",
-            "CREDENTIALS",
             "SLACK_BOT_TOKEN",
             "SURVEYCTO_PASSWORD",
             "SURVEYCTO_SERVER",
             "SURVEYCTO_USERNAME",
         ],
         "gf_treatment_data_function": [
-            "CREDENTIALS",
             "SLACK_BOT_TOKEN",
         ],
         "process-dataset-updates": [
-            "CREDENTIALS",
             "CSV_FILE_ID",
             "DICT_ESCOLA",
             "EXCEL_FILE_ID",
@@ -236,6 +265,9 @@ class EnvLoader:
             "STRAPI_TOKEN",
         ],
         "docusign-webhook": [
+            # It imports SchoolRegisterLogger lazily (main.py:271), which reads this. Its
+            # absence here was the second half of the same defect.
+            "BIGQUERY_DATASET_SCHOOL_REGISTER",
             "BIGQUERY_DATASET_ACCESS",
             "BIGQUERY_TABLE_LOGS",
             "BIGQUERY_TABLE_REQUESTS",
@@ -262,7 +294,6 @@ class EnvLoader:
             "STRAPI_TOKEN",
         ],
         "pi_treatment_data_function": [
-            "CREDENTIALS",
             "SLACK_BOT_TOKEN",
         ],
         "pi_raw_data_function": [
@@ -280,48 +311,36 @@ class EnvLoader:
                                 "SURVEYCTO_SERVER",
                                 "SURVEYCTO_USERNAME",
                                 "NOME_ARQUIVO_CSV_NO_ZIP",
-                                "CREDENTIALS",
                                 "SLACK_BOT_TOKEN",
                                 "SLACK_CHANNEL_FLUENCY",
                                 "FORM_ID","PAVLOVIA_GITLAB_TOKEN"
                             ],
 
 
-        "stf-treatment-function" : [ "CREDENTIALS", "SLACK_BOT_TOKEN"  ,"SURVEYCTO_SERVER",
+        "stf-treatment-function" : [ "SLACK_BOT_TOKEN"  ,"SURVEYCTO_SERVER",
                                 "SURVEYCTO_USERNAME","SURVEYCTO_PASSWORD"],
 
-        "twilio-functions" : [ "TWILIO_ACCOUNT_SID", "TWILIO_WHATSAPP_NUMBER", "CONTENT_SID", "CREDENTIALS",'TWILIO_AUTH_TOKEN' ],
+        "twilio-functions" : [ "TWILIO_ACCOUNT_SID", "TWILIO_WHATSAPP_NUMBER", "CONTENT_SID",'TWILIO_AUTH_TOKEN' ],
 
     
-        "school-register" : [ "GCP_PROJECT_ID",
-                            "GCP_REGION",
-                            "DOCUSIGN_TEMPLATE_SCHOOL_REGISTER",
-                            "DOCUSIGN_ACCOUNT_ID",
-                            "DOCUSIGN_API_BASE_URL",
-                            "DOCUSIGN_BASE_URL",
-                            "BIGQUERY_DATASET_SCHOOL_REGISTER",
-                            "SLACK_CHANNEL_SCHOOL_REGISTER_LOGS",
-                            "CREDENTIALS",
-                            "DOCUSIGN_ACCESS_TOKEN",
-                            "DOCUSIGN_INTEGRATION_KEY",
-                            "DOCUSIGN_USER_ID",
-                            "DOCUSIGN_CLIENT_SECRET", 'DOCUSIGN_SIGNING_RETURN_URL','SIGNING_PROXY_URL'],
-
-        "school-register-manager" : [ "GCP_PROJECT_ID",
-                            "GCP_REGION",
-                            "DOCUSIGN_TEMPLATE_SCHOOL_REGISTER",
-                            "DOCUSIGN_ACCOUNT_ID",
-                            "DOCUSIGN_API_BASE_URL",
-                            "DOCUSIGN_BASE_URL",
-                            "BIGQUERY_DATASET_SCHOOL_REGISTER",
-                            "SLACK_CHANNEL_SCHOOL_REGISTER_LOGS",
-                            "CREDENTIALS",
-                            "DOCUSIGN_ACCESS_TOKEN",
-                            "DOCUSIGN_INTEGRATION_KEY",
-                            "DOCUSIGN_USER_ID",
-                            "DOCUSIGN_CLIENT_SECRET",'DOCUSIGN_SIGNING_RETURN_URL','SIGNING_PROXY_URL']
-
-    } 
+        # The school-register functions share one configuration, defined once in
+        # SCHOOL_REGISTER_VARS at the top of this module.
+        #
+        # It used to be two hand-copied lists, and that is exactly how
+        # `school-register-processor` came to have no entry at all: the deployed function's
+        # name was never one of the two anybody wrote out. It worked anyway, because
+        # shared/school_register_logger.py called load_env("school-register") at import time
+        # and every function importing it inherited the set. When that import-time call was
+        # removed (equidade-access-cloud-functions#7), the function started failing with
+        # "DOCUSIGN_TEMPLATE_SCHOOL_REGISTER não configurado" on its next invocation, acking
+        # and dropping every school registration until it was found.
+        #
+        # "school-register" is not a deployed function. It is kept because it is the name that
+        # module passed, so any caller still using it resolves the same set.
+        "school-register": SCHOOL_REGISTER_VARS,
+        "school-register-processor": SCHOOL_REGISTER_VARS,
+        "school-register-manager": SCHOOL_REGISTER_VARS,
+    }
 
 
     # Mapeamento de variáveis de ambiente para nomes de secrets no Secret Manager
