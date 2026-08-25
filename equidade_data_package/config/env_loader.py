@@ -122,7 +122,6 @@ class EnvLoader:
             "GMAIL_IMPERSONATE_USER",
             "GMAIL_TOKEN_DATA",
             "GOOGLE_DRIVE_FOLDER_EDITAIS",
-            "GOOGLE_SERVICE_ACCOUNT_KEY",
             "SLACK_BOT_TOKEN_ACCESS",
             "SLACK_CHANNEL_ACCESS_LOGS",
             "STRAPI_BASE_URL",
@@ -176,7 +175,6 @@ class EnvLoader:
             "GMAIL_IMPERSONATE_USER",
             "GMAIL_TOKEN_DATA",
             "GOOGLE_DRIVE_FOLDER_EDITAIS",
-            "GOOGLE_SERVICE_ACCOUNT_KEY",
             "SLACK_BOT_TOKEN_ACCESS",
             "SLACK_CHANNEL_ACCESS_LOGS",
             "STRAPI_BASE_URL",
@@ -202,7 +200,6 @@ class EnvLoader:
             "GMAIL_IMPERSONATE_USER",
             "GMAIL_TOKEN_DATA",
             "GOOGLE_DRIVE_FOLDER_EDITAIS",
-            "GOOGLE_SERVICE_ACCOUNT_KEY",
             "SLACK_BOT_TOKEN_ACCESS",
             "SLACK_CHANNEL_ACCESS_LOGS",
             "STRAPI_BASE_URL",
@@ -258,7 +255,6 @@ class EnvLoader:
             "GMAIL_IMPERSONATE_USER",
             "GMAIL_TOKEN_DATA",
             "GOOGLE_DRIVE_FOLDER_EDITAIS",
-            "GOOGLE_SERVICE_ACCOUNT_KEY",
             "SLACK_BOT_TOKEN_ACCESS",
             "SLACK_CHANNEL_ACCESS_LOGS",
             "STRAPI_BASE_URL",
@@ -287,7 +283,6 @@ class EnvLoader:
             "GMAIL_IMPERSONATE_USER",
             "GMAIL_TOKEN_DATA",
             "GOOGLE_DRIVE_FOLDER_EDITAIS",
-            "GOOGLE_SERVICE_ACCOUNT_KEY",
             "SLACK_BOT_TOKEN_ACCESS",
             "SLACK_CHANNEL_ACCESS_LOGS",
             "STRAPI_BASE_URL",
@@ -352,6 +347,14 @@ class EnvLoader:
         "DOCUSIGN_CLIENT_SECRET": "docusign-client-secret",
         "DOCUSIGN_INTEGRATION_KEY": "docusign-integration-key",
         "GMAIL_TOKEN_DATA": "gmail-token-data",
+        # Orfa desde 2026-08-25: nenhuma entrada de FUNCTION_ENV_MAP referencia mais
+        # GOOGLE_SERVICE_ACCOUNT_KEY, entao esta linha nao resolve nada. Mantida para que,
+        # se alguem reintroduzir a variavel, ela aponte para o secret certo em vez de cair
+        # no palpite (google-service-account-key, que e o mesmo nome, mas por acidente).
+        #
+        # A chave que esse secret guarda e da bigquery-loader@, a conta de 22 papeis. Ela
+        # nao deve voltar a ser lida por function nenhuma -- ver drive_client.py no
+        # equidade-access-cloud-functions para o caminho que a substituiu.
         "GOOGLE_SERVICE_ACCOUNT_KEY": "google-service-account-key",
         "SLACK_BOT_TOKEN_ACCESS": "slack-bot-token-access",
         "STRAPI_TOKEN": "strapi-token",
