@@ -34,11 +34,18 @@ jobs:
           - 'gf_raw_data_function'
           - 'iu-dataset-update-function'
           - 'consistency_checker_function'
-          # - 'pi_treatment_data_function'
-          #   Commented out deliberately, not forgotten. The Cloud Function was deleted
-          #   when its wave ended and there is no new wave yet. Dispatching a deploy
-          #   here would recreate a resource that was removed on purpose. Uncomment when
-          #   the next PI wave starts.
+          # Re-enabled 2026-08-26: a new PI wave started, which is the condition the
+          # previous comment named. It was commented out while the function did not exist,
+          # so that a package release could not recreate a resource deleted on purpose.
+          #
+          # Safe to dispatch only because the function repository stopped writing the
+          # bigquery-loader@ key into the function's CREDENTIALS environment variable
+          # (pi_treatment_data_function#6). Before that change, a release here would have
+          # rebuilt the function carrying the key this project is retiring -- which is what
+          # its own push trigger did on 2026-08-15.
+          #
+          # Comment it out again when the wave ends and the function is deleted.
+          - 'pi_treatment_data_function'
           - 'pi_raw_data_function'
           - 'etl-surveycto-function'
           # STF functions. They have always listened for package-updated; they were
