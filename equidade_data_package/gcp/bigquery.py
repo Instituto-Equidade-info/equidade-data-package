@@ -4,7 +4,6 @@ import pandas as pd
 import os
 import logging
 import numpy as np
-import hashlib
 import time
 import json
 import io
@@ -15,18 +14,23 @@ from google.cloud import bigquery
 from .credentials import resolve_credentials
 
 
-# Global cache for query results
-_query_cache = {}
-
-
 def query_bigquery(
     sql_query: str, credentials_json: Optional[Dict] = None
 ) -> pd.DataFrame:
     """
-    Execute a BigQuery query with manual caching implementation.
+    Execute a BigQuery query and return the result as a DataFrame.
 
-    This function caches query results to avoid redundant API calls for identical queries.
-    The cache key is an MD5 hash of the SQL query string.
+    Every call runs the query. Repeated identical queries are still cheap, because
+    BigQuery's own result cache (`use_query_cache=True`) serves them -- and that cache is
+    invalidated when a referenced table changes, which is the property the old one lacked.
+
+    There used to be a second cache here: a module-level dict keyed by the SQL text, with
+    no expiry. In a Cloud Function the module outlives the invocation, so on a warm
+    instance every repeated query returned the FIRST result the instance ever saw. The
+    STF treatment runs the same SQL on every trigger; once a 5-minute schedule kept its
+    instance warm, it re-published the same contract all morning on 2026-09-23 while new
+    submissions landed in the raw table. The only trace was a `logging.info("Cache hit")`,
+    which Gen 1 functions do not emit.
 
     Args:
         sql_query: The SQL query to execute
@@ -43,18 +47,7 @@ def query_bigquery(
     Example:
         >>> credentials = {...}  # Your GCP credentials dict
         >>> df = query_bigquery("SELECT * FROM dataset.table", credentials)
-        >>> # Second call with same query returns cached result
-        >>> df2 = query_bigquery("SELECT * FROM dataset.table", credentials)
     """
-    # Create hash of query for cache key
-    query_hash = hashlib.md5(sql_query.encode("utf-8")).hexdigest()
-
-    # Check if we have this query in cache
-    if query_hash in _query_cache:
-        logging.info(f"Cache hit for query: {query_hash[:8]}...")
-        return _query_cache[query_hash].copy()  # Return copy to avoid modifications
-
-    # If not in cache, execute the query
     start_time = time.time()
 
     try:
@@ -77,9 +70,6 @@ def query_bigquery(
         df = query_job.to_dataframe()
 
         logging.info(f"BigQuery query took {time.time() - start_time:.2f} seconds")
-
-        # Add to cache
-        _query_cache[query_hash] = df.copy()
 
         return df
 

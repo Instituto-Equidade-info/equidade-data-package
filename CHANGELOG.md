@@ -1,5 +1,33 @@
 # Changelog - equidade-data-package
 
+## [0.5.1] - 2026-09-23
+
+### 🐛 `query_bigquery` returned the first result a warm instance ever saw
+
+`query_bigquery` kept a module-level dict of results keyed by the SQL text, with no
+expiry. In a Cloud Function the module survives between invocations, so on a warm
+instance any query repeated verbatim returned the result of its first run, forever.
+
+It went unnoticed because STF's functions used to start cold: the treatment ran a few
+times a fortnight. On 2026-09-23 a 5-minute ETL schedule kept `stf-treatment-function`
+warm, and from 08:50 it re-published the same `stf_roar_survey` on every trigger: the
+BigQuery job log shows its last read of the raw table at 08:50, while it went on
+running and writing every five minutes. None of that morning's submissions reached the
+contract. The only trace was `logging.info("Cache hit ...")`, which Gen 1 does not emit.
+
+### Changed
+
+- **Removed the in-process cache from `query_bigquery`.** Every call runs the query.
+  Repeated identical queries stay cheap through BigQuery's result cache
+  (`use_query_cache=True`, unchanged), which is invalidated when a referenced table
+  changes.
+
+### Who is affected
+
+Any function that calls `query_bigquery` with the same SQL on a warm instance. Before
+this, it could be serving stale data without any sign of it. After this, it reads current
+data, at the cost of one BigQuery job per call (usually a cache hit, 0 bytes billed).
+
 ## [0.5.0] - 2026-08-19
 
 ### 🐛 school-register-processor had no entry, and nobody could tell
