@@ -260,31 +260,23 @@ file_buffer = data_loader.download_file(
 
 ### BigQuery
 
-#### Query with Caching
+#### Query
 
-Execute BigQuery queries with automatic result caching:
+Execute a BigQuery query and get a DataFrame:
 
 ```python
 from equidade_data_package.gcp.bigquery import query_bigquery
 
-# Execute a query with credentials
-credentials = {...}  # Your GCP credentials dict
+# Credentials are optional: explicit dict, else $GCP_CREDENTIALS, else ADC
 df = query_bigquery(
-    sql_query="SELECT * FROM `project.dataset.table` WHERE date > '2024-01-01'",
-    credentials_json=credentials
+    sql_query="SELECT COUNT(*) AS total FROM `project.dataset.table`"
 )
-
-# Or use environment variable for credentials
-# Set GCP_CREDENTIALS env var with your credentials JSON
-df = query_bigquery(
-    sql_query="SELECT COUNT(*) as total FROM `project.dataset.table`"
-)
-
-# Subsequent calls with the same query return cached results instantly
-df_cached = query_bigquery(
-    sql_query="SELECT COUNT(*) as total FROM `project.dataset.table`"
-)  # Returns immediately from cache
 ```
+
+Every call runs the query. Repeats are served by BigQuery's own result cache, which is
+invalidated when a referenced table changes. There is deliberately no in-process cache:
+in a Cloud Function the module outlives the invocation, and such a cache returns the
+first result a warm instance ever saw (see CHANGELOG 0.5.1).
 
 #### Load DataFrames to BigQuery
 
