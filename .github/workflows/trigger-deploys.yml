@@ -54,6 +54,10 @@ jobs:
           # var against this matrix.
           - 'stf-etl-qualtrics'
           - 'stf_treatment_function'
+          # Missing until 2026-09-23: v0.5.1 fixed a cache that froze warm functions and
+          # reached every STF function but this one. Needs its workflow to listen for
+          # `package-updated` (stf-data-consolidation#5), or the event goes nowhere.
+          - 'stf-data-consolidation'
           - 'dataset-update-function'
           - 'equidade-data-package'
           - equidade-access-cloud-functions
