@@ -1,5 +1,25 @@
 # Changelog - equidade-data-package
 
+## [0.5.2] - 2026-10-01
+
+### 🔒 `STRAPI_BASE_URL` over https
+
+The default `STRAPI_BASE_URL` in `env-files/env-shared.yaml` pointed to
+`http://cms.equidade.info`, so a function that fell back to it would send the Strapi
+API token in clear text. The domain now has a valid certificate (Heroku ACM).
+
+### Changed
+
+- **`STRAPI_BASE_URL` is now `https://cms.equidade.info`.**
+
+### Who is affected
+
+Nobody at runtime today. A deployed environment variable takes precedence over this
+file, and the five functions that read `STRAPI_BASE_URL` (access-processor,
+access-manager, access-revocation, docusign-webhook, slack-notifier) all receive it
+from `equidade-access-cloud-functions/env-shared.yaml`, which moves to https in
+equidade-access-cloud-functions#14. This keeps the fallback consistent with it.
+
 ## [0.5.1] - 2026-09-23
 
 ### 🐛 `query_bigquery` returned the first result a warm instance ever saw
