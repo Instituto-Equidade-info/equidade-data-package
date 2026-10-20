@@ -279,7 +279,7 @@ toml = [
 
 [[package]]
 name = "equidade-data-package"
-version = "0.2.5"
+version = "0.5.2"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
