@@ -19,6 +19,24 @@ file, and the five functions that read `STRAPI_BASE_URL` (access-processor,
 access-manager, access-revocation, docusign-webhook, slack-notifier) all receive it
 from `equidade-access-cloud-functions/env-shared.yaml`, which moves to https in
 equidade-access-cloud-functions#14. This keeps the fallback consistent with it.
+## [0.5.2] - 2026-10-20
+
+### 🔐 `docusign-webhook` now loads its HMAC key
+
+`docusign-webhook` verifies the DocuSign Connect signature (`X-DocuSign-Signature-1`) only
+when `DOCUSIGN_WEBHOOK_SECRET` is set. The variable was not in the function's entry of
+`FUNCTION_ENV_MAP`, so it was never loaded and the check never ran. The function accepts
+`allUsers`, so any POST with a known `envelope_id` was treated as a real signature.
+
+### Added
+
+- **`DOCUSIGN_WEBHOOK_SECRET`** in `docusign-webhook`, mapped to the
+  `docusign-webhook-secret` secret through a function-suffixed entry.
+
+### Who is affected
+
+Only `docusign-webhook`. If its identity cannot read the secret yet, the variable stays
+missing and the function behaves as before: it logs a warning and does not verify.
 
 ## [0.5.1] - 2026-09-23
 
