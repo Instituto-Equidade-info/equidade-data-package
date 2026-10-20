@@ -264,6 +264,9 @@ class EnvLoader:
             # It imports SchoolRegisterLogger lazily (main.py:271), which reads this. Its
             # absence here was the second half of the same defect.
             "BIGQUERY_DATASET_SCHOOL_REGISTER",
+            # The DocuSign Connect HMAC key. main.py verifies X-DocuSign-Signature-1 only
+            # when this is set, and it was never listed here, so the check never ran.
+            "DOCUSIGN_WEBHOOK_SECRET",
             "BIGQUERY_DATASET_ACCESS",
             "BIGQUERY_TABLE_LOGS",
             "BIGQUERY_TABLE_REQUESTS",
@@ -387,7 +390,10 @@ class EnvLoader:
         "SLACK_BOT_TOKEN_consistency_checker_function": "slack-bot-token-consistency-checker-function",
         "AUTHORIZATION_KEY_BLIP": "authorization-key-blip",
         "AUTORIZATION_BLIP": "authorization-key-blip",
-        "PAVLOVIA_GITLAB_TOKEN": "pavlovia-gitlab-token"  # Typo no nome original
+        "PAVLOVIA_GITLAB_TOKEN": "pavlovia-gitlab-token",  # Typo no nome original
+        # Suffixed, not shared: only docusign-webhook receives DocuSign Connect events, and
+        # only svc-docusign-webhook@ holds secretAccessor on it (gcp_truth_ground #159).
+        "DOCUSIGN_WEBHOOK_SECRET_docusign-webhook": "docusign-webhook-secret",
     }
 
     def __init__(self, config: EnvConfig):
